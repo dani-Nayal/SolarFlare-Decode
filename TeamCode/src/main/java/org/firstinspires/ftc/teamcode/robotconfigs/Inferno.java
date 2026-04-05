@@ -49,8 +49,8 @@ public class Inferno implements RobotConfig{
     public static SyncedActuators<BotMotor> flywheel;
     public static double targetFlywheelVelocity;
     public static SyncedActuators<BotServo> turretYaw = new SyncedActuators<>(
-            new BotServo("turretYawTop", Servo.Direction.REVERSE,422,5,320,0),
-            new BotServo("turretYawBottom", Servo.Direction.FORWARD,422,5,320,0)
+            new BotServo("turretYawTop", Servo.Direction.FORWARD,422,5,320,0),
+            new BotServo("turretYawBottom", Servo.Direction.REVERSE,422,5,320,0)
     );
     public static SyncedActuators<BotServo> turretPitch = new SyncedActuators<>(
             new BotServo("turretPitchLeft", Servo.Direction.FORWARD, 422,5,180,102),
