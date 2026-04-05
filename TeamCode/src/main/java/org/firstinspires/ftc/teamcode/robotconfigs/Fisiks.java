@@ -1,0 +1,463 @@
+package org.firstinspires.ftc.teamcode.robotconfigs;
+
+import static org.apache.commons.math3.util.FastMath.atan2;
+import static org.apache.commons.math3.util.FastMath.cos;
+import static org.apache.commons.math3.util.FastMath.sin;
+import static org.apache.commons.math3.util.FastMath.atan;
+import static org.apache.commons.math3.util.FastMath.asin;
+import static java.lang.Math.PI;
+import static java.lang.Math.min;
+import static java.lang.Math.sqrt;
+
+import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.Vector;
+
+public abstract class Fisiks {
+    final static double MASS = 74.8;
+    final static double AIR_DENSITY = 0.020074;
+    final static double GRAVITY = -386.089;
+    final static double HEIGHT = 10.748;
+    final static double TICKS_TO_RAD = 2*PI/28;
+    final static double WHEEL_RAD = 1.41732;
+    final static double BALL_RAD = 2.5;
+    final static double SURFACE_SPEED_RATIO = 0.7055555556;
+
+    public static double FRICTION = 0.8;
+    final static double AUTHORITY = 0.25;
+    final static double TRANSLATIONAL_DRAG = 0.5;
+    final static double ANGULAR_DRAG = 0;
+    final static double MAGNUS = 0;
+
+    final static double TOTAL_RAD = WHEEL_RAD+BALL_RAD;
+    final static double K_DRAG = -1/(2*MASS)*TRANSLATIONAL_DRAG*AIR_DENSITY*PI*BALL_RAD*BALL_RAD;
+    final static double K_MAGNUS = MAGNUS/MASS;
+    final static double K_SPIN = -3/(4*MASS)*AIR_DENSITY*ANGULAR_DRAG*PI*BALL_RAD;
+
+    final static double yawBracketIncrement = Math.toRadians(3);
+    final static double VEL_THRESHOLD = 2;
+
+    final static double[] targetPoint = new double[3];
+    static Inferno.BallPath currentBallPath;
+    static double botVelX;
+    static double botVelY;
+    public static double initSpeed;
+    public static double initSpin;
+    static double distance;
+    final static double[] targetNorm = new double[2];
+    final static double[] sidewaysNorm = new double[2];
+    public static boolean success = true;
+    public static class Vec3 {
+        public double x,y,z;
+        public Vec3(double x, double y, double z){
+            set(x,y,z);
+        }
+        Vec3 set(double X,double Y,double Z){x=X;y=Y;z=Z;return this;}
+        Vec3 set(Vec3 vec){x=vec.x;y=vec.y;z=vec.z;return this;}
+        Vec3 addScaled(Vec3 b,double s){x+=b.x*s;y+=b.y*s;z+=b.z*s;return this;}
+        Vec3 add(double x, double y, double z){this.x+=x;this.y+=y;this.z+=z;return this;}
+        Vec3 scale(double s){x*=s;y*=s;z*=s;return this;}
+        double magnitude(){return sqrt(x*x+y*y+z*z);}
+    }
+    public static class State{
+        public final Vec3 tVel = new Vec3(0,0,0);
+        public final Vec3 tPos = new Vec3(0,0,0);
+        //public final Vec3 aVel = new Vec3(0,0,0);
+        public void set(State state){
+            tVel.set(state.tVel);
+            tPos.set(state.tPos);
+            //aVel.set(state.aVel);
+        }
+    }
+    public static class RK4{
+        private final static State current = new State();
+        private final static State[] derivs = new State[]{new State(),new State(),new State(),new State()};
+        private final static State tmp = new State();
+        private final static double deltaT = 0.007;
+        private static void deriv(State current, State change){
+            change.tPos.set(current.tVel);
+            double vmag = current.tVel.magnitude();
+            change.tVel.set(
+                    K_DRAG*vmag*current.tVel.x /*+ K_MAGNUS*(current.aVel.y*current.tVel.z - current.aVel.z*current.tVel.y*)*/,
+                    K_DRAG*vmag*current.tVel.y /*+ K_MAGNUS*(current.aVel.z*current.tVel.x - current.aVel.x*current.tVel.z)*/,
+                    K_DRAG*vmag*current.tVel.z /*+ K_MAGNUS*(current.aVel.x*current.tVel.y - current.aVel.y*current.tVel.x)*/ + GRAVITY
+            );
+            /*
+            double wmag = current.aVel.magnitude();
+            change.aVel.set(
+                    K_SPIN*wmag*current.aVel.x,
+                    K_SPIN*wmag*current.aVel.y,
+                    K_SPIN*wmag*current.aVel.z
+            );
+            */
+        }
+        public static State integrate(double pitch, double yaw, double time){
+            current.tPos.set((cos(PI/2 + pitch)+1)*cos(yaw), (cos(PI/2 + pitch)+1)*sin(yaw), sin(PI/2 + pitch)).scale(TOTAL_RAD);
+            current.tVel.set(cos(yaw)*cos(pitch), sin(yaw)*cos(pitch), sin(pitch)).scale(initSpeed).add(botVelX,botVelY,0);
+            //current.aVel.set(cos(yaw + PI/2), sin(yaw + PI/2), 0).scale(initSpin);
+            double t = 0;
+            double h;
+            while (t < time){
+                h = min(deltaT, time-t);
+
+                deriv(current, derivs[0]);
+                tmp.tPos.set(current.tPos).addScaled(derivs[0].tPos,h*0.5);
+                tmp.tVel.set(current.tVel).addScaled(derivs[0].tVel,h*0.5);
+                //tmp.aVel.set(current.aVel).addScaled(derivs[0].aVel,h*0.5);
+                deriv(tmp, derivs[1]);
+                tmp.tPos.set(current.tPos).addScaled(derivs[1].tPos,h*0.5);
+                tmp.tVel.set(current.tVel).addScaled(derivs[1].tVel,h*0.5);
+                //tmp.aVel.set(current.aVel).addScaled(derivs[1].aVel,h*0.5);
+                deriv(tmp, derivs[2]);
+                tmp.tPos.set(current.tPos).addScaled(derivs[2].tPos,h);
+                tmp.tVel.set(current.tVel).addScaled(derivs[2].tVel,h);
+                //tmp.aVel.set(current.aVel).addScaled(derivs[2].aVel,h);
+                deriv(tmp, derivs[3]);
+
+                double c = h/6.0;
+                current.tPos.addScaled(derivs[0].tPos, c).addScaled(derivs[1].tPos,2*c).addScaled(derivs[2].tPos,2*c).addScaled(derivs[3].tPos,c);
+                current.tVel.addScaled(derivs[0].tVel, c).addScaled(derivs[1].tVel,2*c).addScaled(derivs[2].tVel,2*c).addScaled(derivs[3].tVel,c);
+                //current.aVel.addScaled(derivs[0].aVel, c).addScaled(derivs[1].aVel,2*c).addScaled(derivs[2].aVel,2*c).addScaled(derivs[3].aVel,c);
+
+                t+=h;
+            }
+            return current;
+        }
+
+    }
+    public static class Error{
+        public static double distError;
+        public static double sideError;
+        public static double heightError;
+        public static void findError(double pitch, double yaw, double time){
+            State s = RK4.integrate(pitch,yaw,time);
+            distError = s.tPos.x*targetNorm[0] + s.tPos.y*targetNorm[1] - distance;
+            heightError = s.tPos.z - targetPoint[2];
+            sideError = sidewaysNorm[0]*(s.tPos.x-targetPoint[0]) + sidewaysNorm[1]*(s.tPos.y-targetPoint[1]);
+            /*System.out.printf(
+                    "pitch=%.3f  time=%.3f  yaw=%.3f  distErr=%.2f  heightErr=%.2f  sideErr=%.2f\n",
+                    pitch, time, yaw, distError, heightError, sideError
+            );*/
+        }
+    }
+    public static class Solver{
+        public static final double[] hoodBounds = new double[]{22,90};
+        public static final double[] timeBounds = new double[]{0.2,3};
+        public static boolean willClampHood(double in){return in<Math.toRadians(hoodBounds[0]) || in>Math.toRadians(hoodBounds[1]);}
+        public static boolean willClampTime(double in){return in<timeBounds[0] || in>timeBounds[1];}
+        final public static double[] out = new double[3]; //pitch, yaw, time
+        private static final double STAGE1MAXITR = 8;
+        private static final double STAGE2MAXITR = 6;
+        private static final double DISTERR = 0.15;
+        private static final double HEIGHTERR = 0.15;
+        private static final double YAWERR = 0.2;
+        private static double a,b,c,dj;
+        public static boolean resetJacobian = true;
+        public static boolean stage1Solve(double initialPitchGuess, double initialTimeGuess, double yaw){
+            if (resetJacobian) {
+                resetJacobian = false;
+
+                // Drag-corrected analytical Jacobian (1 RK4 call vs 3 for FD)
+                double dragFactor  = K_DRAG * initSpeed * initialTimeGuess; // negative
+                double drag_pos    = 1.0 + dragFactor / 2.0;
+                double drag_vel    = 1.0 + dragFactor;
+                double vPar        = targetNorm[0] * botVelX + targetNorm[1] * botVelY;
+
+                double topLeft     = -initSpeed * sin(initialPitchGuess) * initialTimeGuess * drag_pos;
+                double topRight    =  initSpeed * cos(initialPitchGuess) * drag_vel + vPar;
+                double bottomLeft  =  initSpeed * cos(initialPitchGuess) * initialTimeGuess * drag_pos;
+                double bottomRight =  initSpeed * sin(initialPitchGuess) * drag_vel + GRAVITY * initialTimeGuess;
+
+                double determinant = topLeft * bottomRight - topRight * bottomLeft;
+                a  =  bottomRight / determinant;
+                b  = -topRight    / determinant;
+                c  = -bottomLeft  / determinant;
+                dj =  topLeft     / determinant;
+
+                Error.findError(initialPitchGuess, yaw, initialTimeGuess);
+
+                /*
+                // Original FD Jacobian (3 RK4 calls)
+                double timeOffset = 0.01;
+                double angleOffset = Math.toRadians(1);
+
+                Error.findError(initialPitchGuess + angleOffset, yaw, initialTimeGuess);
+                double distErr2 = Error.distError;
+                double heightErr2 = Error.heightError;
+                Error.findError(initialPitchGuess, yaw, initialTimeGuess + timeOffset);
+                double distErr3 = Error.distError;
+                double heightErr3 = Error.heightError;
+                Error.findError(initialPitchGuess, yaw, initialTimeGuess);
+                double distErr1 = Error.distError;
+                double heightErr1 = Error.heightError;
+
+                double topLeft = (distErr2 - distErr1) / angleOffset;
+                double bottomRight = (heightErr3 - heightErr1) / timeOffset;
+                double topRight = (distErr3 - distErr1) / timeOffset;
+                double bottomLeft = (heightErr2 - heightErr1) / angleOffset;
+
+                double determinant = topLeft * bottomRight - topRight * bottomLeft;
+                a = bottomRight / determinant;
+                b = -topRight / determinant;
+                c = -bottomLeft / determinant;
+                dj = topLeft / determinant;
+                */
+            }
+            else{
+                Error.findError(initialPitchGuess, yaw, initialTimeGuess);
+            }
+
+            out[0] = initialPitchGuess; out[2] = initialTimeGuess;
+            if (Math.abs(Error.distError)<DISTERR && Math.abs(Error.heightError)<HEIGHTERR)
+                return true;
+
+            double startDistError;
+            double startHeightError;
+            double newDistError;
+            double newHeightError;
+            double bestDistError = Error.distError;
+            double bestHeightError = Error.heightError;
+            double bestSideError = Error.sideError;
+            double bestPitch = initialPitchGuess;
+            double bestTime = initialTimeGuess;
+            double bestA = a, bestB = b, bestC= c, bestDJ = dj;
+            double divergeCounter = 0;
+
+            for(int it=0; it<STAGE1MAXITR; it++)
+            {
+                startDistError = Error.distError; startHeightError = Error.heightError;
+
+                double dx0 = -(a*startDistError + b*startHeightError);
+                double dx1 = -(c*startDistError + dj*startHeightError);
+
+                if (willClampHood(out[0] + dx0) || willClampTime(out[2] + dx1)){
+                    //System.out.println("e");
+                    //System.out.println(out[0] + dx0);
+                    //System.out.println(out[2] + dx1);
+                    out[0] = bestPitch;
+                    out[2] = bestTime;
+                    Error.distError = bestDistError;
+                    Error.heightError = bestHeightError;
+                    Error.sideError = bestSideError;
+                    a = bestA; b = bestB; c = bestC; dj = bestDJ;
+                    return false;
+                }
+
+                double x0 = out[0] + dx0;
+                double x1 = out[2] + dx1;
+
+                Error.findError(x0,yaw,x1);
+
+                if (Math.abs(Error.distError)<DISTERR && Math.abs(Error.heightError)<HEIGHTERR)
+                    return true;
+                if ((Error.distError*Error.distError+Error.heightError*Error.heightError)<(bestDistError*bestDistError+bestHeightError*bestHeightError)){
+                    bestDistError = Error.distError;
+                    bestHeightError = Error.heightError;
+                    bestSideError = Error.sideError;
+                    bestPitch = x0;
+                    bestTime = x1;
+                    bestA = a; bestB = b; bestC = c; bestDJ = dj;
+                } else {
+                    divergeCounter+=1;
+                }
+                if (divergeCounter>=2){
+                    out[0] = bestPitch;
+                    out[2] = bestTime;
+                    Error.distError = bestDistError;
+                    Error.heightError = bestHeightError;
+                    Error.sideError = bestSideError;
+                    return false;
+                }
+
+                newDistError = Error.distError;
+                newHeightError = Error.heightError;
+
+                double y0 = newDistError - startDistError;
+                double y1 = newHeightError - startHeightError;
+
+                double sty = dx0*y0 + dx1*y1;
+
+                if (Math.abs(sty) > 1e-12) {
+                    double r0 = dx0 - (a*y0 + b*y1);
+                    double r1 = dx1 - (c*y0 + dj*y1);
+
+                    double k0 = r0/sty;
+                    double k1v = r1/sty;
+
+                    a += k0*dx0;  b += k0*dx1;
+                    c += k1v*dx0; dj+= k1v*dx1;
+                }
+                out[0] = x0; out[2] = x1;
+            }
+            out[0] = bestPitch;
+            out[2] = bestTime;
+            Error.distError = bestDistError;
+            Error.heightError = bestHeightError;
+            Error.sideError = bestSideError;
+            return false;
+        }
+        public static boolean solve(double initialPitchGuess, double initialTimeGuess, double yawTopBracket, double yawBottomBracket){
+            out[1] = atan2(targetPoint[1], targetPoint[0]);
+            if (Math.abs(sidewaysNorm[0]*botVelX+sidewaysNorm[1]*botVelY)<VEL_THRESHOLD){
+                return stage1Solve(initialPitchGuess,initialTimeGuess,out[1]);
+            }
+            double fLo, fHi;
+            //System.out.println("low");
+            stage1Solve(initialPitchGuess,initialTimeGuess,yawBottomBracket); fLo = Error.sideError;
+            //System.out.println("high");
+            stage1Solve(initialPitchGuess,initialTimeGuess,yawTopBracket); fHi = Error.sideError;
+            for (int i=0;i<5;i++){
+                if (fLo*fHi<=0) break;
+               //System.out.println("faliure");
+                if (fHi<0){
+                    yawTopBracket += yawBracketIncrement;
+                    stage1Solve(initialPitchGuess,initialTimeGuess,yawTopBracket); fHi = Error.sideError;
+                } else if (fLo>0){
+                    yawBottomBracket -= yawBracketIncrement;
+                    stage1Solve(initialPitchGuess,initialTimeGuess,yawBottomBracket); fLo = Error.sideError;
+                }
+            }
+            if (fLo*fHi>0) return false;
+            double a=yawBottomBracket, b=yawTopBracket, fa=fLo, fb=fHi;
+            double initPitchGuess = initialPitchGuess, initTimeGuess = initialTimeGuess;
+            double c = (a*fb - b*fa)/(fb - fa);
+            for(int it=0; it<STAGE2MAXITR; it++) {
+                //System.out.println("Stage 2");
+                boolean success = stage1Solve(initPitchGuess,initTimeGuess,c);
+                initPitchGuess = out[0];
+                initTimeGuess = out[2];
+                double fc = Error.sideError;
+                if (Math.abs(fc) < YAWERR) {
+                    out[1] = c;
+                    return success;
+                }
+                if (fa*fc < 0) {
+                    b=c; fb=fc;
+                    fa*=0.5; // Illinois
+                } else {
+                    a=c; fa=fc;
+                    fb*=0.5;
+                }
+                c = (a*fb - b*fa)/(fb - fa);
+            }
+            return false;
+        }
+    }
+    public static void buildPhysics(double[] targetPoint, Pose pos, Vector botVel, double flywheelVel){
+        double xPos = pos.getX();
+        double yPos = pos.getY();
+        Fisiks.targetPoint[0] = targetPoint[0] - xPos; Fisiks.targetPoint[1] = targetPoint[1] - yPos; Fisiks.targetPoint[2] = targetPoint[2] - HEIGHT;
+        Fisiks.distance = sqrt(Fisiks.targetPoint[0]*Fisiks.targetPoint[0]+Fisiks.targetPoint[1]*Fisiks.targetPoint[1]);
+        Fisiks.targetNorm[0] = 1/distance * Fisiks.targetPoint[0];
+        Fisiks.targetNorm[1] = 1/distance * Fisiks.targetPoint[1];
+        Fisiks.sidewaysNorm[0] = 1/distance * -Fisiks.targetPoint[1];
+        Fisiks.sidewaysNorm[1] = 1/distance * Fisiks.targetPoint[0];
+        Fisiks.botVelX = botVel.getXComponent();
+        Fisiks.botVelY = botVel.getYComponent();
+        double flyVel = TICKS_TO_RAD*flywheelVel*WHEEL_RAD;
+        //double backVel = flyVel*SURFACE_SPEED_RATIO;
+        //Fisiks.initSpeed = FRICTION*(AUTHORITY * backVel+(1- AUTHORITY)*flyVel);
+        //Fisiks.initSpin = FRICTION*((min(2*AUTHORITY,1)*backVel + (1-min(2*AUTHORITY,1))*flyVel) - ((1 - min(2-2*AUTHORITY,1))*backVel + min(2-2*AUTHORITY,1)*flyVel))/BALL_RAD;
+        Fisiks.initSpeed = FRICTION * flyVel;
+    }
+    public static final double[] yawBrackets = new double[2];
+    public static final double[] pitchTimeGuesses = new double[4];
+    public static void yawGuesses(double pitchGuess, double timeGuess){
+        double baseYaw = atan2(targetPoint[1], targetPoint[0]);
+        double vPerp = sidewaysNorm[0] * botVelX + sidewaysNorm[1] * botVelY;
+        double arg = Math.max(-1, Math.min(1, -vPerp / (initSpeed * cos(pitchGuess))));
+        double correction = asin(arg);
+        int corrSign = (correction >= 0) ? 1 : -1;
+
+        double epsilon = Math.toRadians(1);
+        double dragFactor = -K_DRAG * initSpeed * timeGuess;
+        double c = 0.07; // tunable
+        double w = c * Math.min(dragFactor, 1.0);
+
+        // As arg approaches ±1, pitchGuess is too steep → formula overcorrects.
+        // Base: (1 - sat²) collapses the undercorrect bracket at high saturation.
+        // Extra margin: subtract sat*w so c controls additional width at nonzero velocity.
+        double saturation = Math.abs(arg);
+        double undercorrectFactor = Math.max(0.0, (1.0 - saturation * saturation) * (1.0 - w) - saturation * w);
+
+        double bracketOvercorrect  = baseYaw + correction * (1.0 + w) + corrSign * epsilon;
+        double bracketUndercorrect = baseYaw + correction * undercorrectFactor - corrSign * epsilon;
+
+        yawBrackets[0] = Math.min(bracketOvercorrect, bracketUndercorrect);
+        yawBrackets[1] = Math.max(bracketOvercorrect, bracketUndercorrect);
+    }
+    public static void pitchTimeGuesses() {
+        pitchTimeGuesses[0] = Math.toRadians(45); pitchTimeGuesses[1] = 0.7; pitchTimeGuesses[2] = Math.toRadians(65); pitchTimeGuesses[3] = 1.1;
+        double vPar = targetNorm[0] * botVelX + targetNorm[1] * botVelY;
+        double kL = 0.86; // tunable
+        double kH = 0.77; // tunable
+
+
+        // Step 1: drag-free solution (used only to estimate dragFactor)
+        double A0    = GRAVITY * distance * distance / (2.0 * initSpeed * initSpeed);
+        double disc0 = distance * distance - 4.0 * A0 * (A0 - targetPoint[2]);
+        if (disc0 < 0) return;
+        double sq0   = sqrt(disc0);
+        double phiL0 = atan((-distance + sq0) / (2.0 * A0));
+        double phiH0 = atan((-distance - sq0) / (2.0 * A0));
+        double vhL0  = initSpeed * cos(phiL0) + vPar;
+        double vhH0  = initSpeed * cos(phiH0) + vPar;
+        if (vhL0 <= 0 || vhH0 <= 0) return;
+        double tL0 = distance / vhL0;
+        double tH0 = distance / vhH0;
+
+        // Step 2: effective distances accounting for drag
+        double dfL = -K_DRAG * distance / cos(phiL0);
+        double dfH = -K_DRAG * distance / cos(phiH0);
+        double dL  = distance * (1.0 + kL * dfL);
+        double dH  = distance * (1.0 + kH * dfH);
+
+        // Step 3: re-solve quadratics with effective distances
+        // LOW arc — re-derivation safe (ascending branch = correct branch for low arc)
+        double AL    = GRAVITY * dL * dL / (2.0 * initSpeed * initSpeed);
+        double discL = dL * dL - 4.0 * AL * (AL - targetPoint[2]);
+        if (discL >= 0) {
+            double sqL  = sqrt(discL);
+            double phiL = atan((-dL + sqL) / (2.0 * AL));
+            double vhL  = initSpeed * cos(phiL) + vPar;
+            if (vhL > 0) {
+                double tL = distance * (1.0 + 0.5 * kL * dfL) / vhL;
+                double sinPhiL = (targetPoint[2] - 0.5 * GRAVITY * tL * tL) / (initSpeed * tL);
+                if (Math.abs(sinPhiL) <= 1.0) {
+                    phiL = asin(sinPhiL);
+                    double vhL2 = initSpeed * cos(phiL) + vPar;
+                    if (vhL2 > 0) tL = distance * (1.0 + 0.5 * kL * dfL) / vhL2;
+                }
+                pitchTimeGuesses[0] = phiL;
+                pitchTimeGuesses[1] = tL;
+            } else { pitchTimeGuesses[0] = phiL0; pitchTimeGuesses[1] = tL0; }
+        }   else   { pitchTimeGuesses[0] = phiL0; pitchTimeGuesses[1] = tL0; }
+
+        // HIGH arc — no re-derivation: d_eff quadratic already satisfies both
+        // horizontal and vertical constraints for the descending solution
+        double AH    = GRAVITY * dH * dH / (2.0 * initSpeed * initSpeed);
+        double discH = dH * dH - 4.0 * AH * (AH - targetPoint[2]);
+        if (discH >= 0) {
+            double sqH  = sqrt(discH);
+            double phiH = atan((-dH - sqH) / (2.0 * AH));
+            double vhH  = initSpeed * cos(phiH) + vPar;
+            if (vhH > 0) {
+                pitchTimeGuesses[2] = phiH;
+                pitchTimeGuesses[3] = distance * (1.0 + 0.5 * kH * dfH) / vhH;
+            } else { pitchTimeGuesses[2] = phiH0; pitchTimeGuesses[3] = tH0; }
+        }   else   { pitchTimeGuesses[2] = phiH0; pitchTimeGuesses[3] = tH0; }
+    }
+
+    public static double[] runPhysics(Inferno.BallPath currentBallPath, double[] targetPoint, Pose pos, Vector botVel, double flywheelVel){
+        Fisiks.currentBallPath = currentBallPath;
+        Solver.resetJacobian = true;
+        buildPhysics(targetPoint,pos,botVel,flywheelVel);
+        pitchTimeGuesses();
+        double initialPitchGuess;
+        double initialTimeGuess;
+        if (currentBallPath == Inferno.BallPath.HIGH) {initialPitchGuess = pitchTimeGuesses[2]; initialTimeGuess = pitchTimeGuesses[3];} else {initialPitchGuess = pitchTimeGuesses[0]; initialTimeGuess = pitchTimeGuesses[1];}
+        yawGuesses(initialPitchGuess, initialTimeGuess);
+        success = Solver.solve(initialPitchGuess,initialTimeGuess,yawBrackets[1],yawBrackets[0]);
+        //System.out.println(success);
+        return Solver.out;
+    }
+}

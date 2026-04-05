@@ -1,0 +1,28 @@
+
+x --> Increases from top left to the right
+y
+
+|
+|
+V
+Increases from top left down
+
+corner0           corner1
+
+
+
+corner3           corner2
+
+ty is negative when target is under crosshair
+
+tx is negative when target is to the right of crosshair
+
+pedro: 0,0 is bottom left corner, y+ forward x+ right
+ftc / ftc dash / limelight / 0,0 is middle of field, -x forward, +y right
+
+
+
+Pedro Pose yaw is always radians
+Standard Pose2D yaw is always degrees
+
+limelight yaw: 180 / -180 forward, -90 left, 90 right

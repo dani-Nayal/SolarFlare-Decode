@@ -1,0 +1,458 @@
+package org.firstinspires.ftc.teamcode.presets;
+
+import static org.firstinspires.ftc.teamcode.base.Components.timer;
+
+import org.firstinspires.ftc.teamcode.base.Components;
+import org.firstinspires.ftc.teamcode.base.Components.Actuator;
+import org.firstinspires.ftc.teamcode.base.Components.BotMotor;
+import org.firstinspires.ftc.teamcode.base.Components.BotServo;
+import org.firstinspires.ftc.teamcode.base.Components.CRActuator;
+import org.firstinspires.ftc.teamcode.base.Components.ControlFunc;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+public abstract class PresetControl { //Holds control functions that actuators can use. Note that more control functions, like other types of motion profiling, can be coded and used.
+    public static class Condition<E extends Actuator<?>> extends ControlFunc<E>{
+        private final Supplier<Boolean> condition;
+        private final ControlFunc<E> func;
+        public Condition(Supplier<Boolean> condition, ControlFunc<E> func){
+            this.condition = condition;
+            this.func = func;
+        }
+        public void registerToSystem(Components.ControlSystem<? extends E> system){
+            super.registerToSystem(system);
+            func.registerToSystem(system);
+        }
+        @Override
+        public void runProcedure() {
+            if (condition.get()){
+                func.runProcedure();
+            }
+        }
+    }
+    public static class GenericPID{ //A class that creates a PID controller for any purpose.
+        private double kP;
+        private double kI;
+        private double kD;
+        private double integralSum;
+        private double previousLoop;
+        private double previousError;
+        private double integralStartThreshold = Double.POSITIVE_INFINITY;
+        private double derivativeStartThreshold = Double.POSITIVE_INFINITY;
+        private boolean clearIntegralWindup = false;
+        private final ArrayList<Double> previousFiveLoopTimes = new ArrayList<>();
+        private final ArrayList<Double> previousFiveErrors = new ArrayList<>();
+        public GenericPID(double kP, double kI, double kD){
+            this.kP=kP;
+            this.kI=kI;
+            this.kD=kD;
+        }
+        public double getPIDOutput(double target, double current, double velocity){ //Give it the target value and the current value
+            double error=target-current;
+            double time=timer.time();
+            double loopTime=time-previousLoop;
+            if (Math.abs(error)<integralStartThreshold) integralSum+=loopTime*error;
+            if (clearIntegralWindup && Math.signum(error)*-1 == Math.signum(previousError)) integralSum = 0;
+            previousFiveLoopTimes.add(loopTime);
+            previousFiveErrors.add(error);
+            if (previousFiveLoopTimes.size()>5){
+                previousFiveErrors.remove(0);
+                previousFiveLoopTimes.remove(0);
+            }
+
+            double pOutput=kP*error;
+            double iOutput=kI*integralSum;
+            double dOutput;
+            if (previousFiveErrors.size()==5){
+                double dtAvg=0;
+                for (double dt:previousFiveLoopTimes){
+                    dtAvg+=dt;
+                }
+                dtAvg=dtAvg/5;
+                dOutput=kD*(-previousFiveErrors.get(4)+8*previousFiveErrors.get(3)-8*previousFiveErrors.get(1)+previousFiveErrors.get(0))/(12*dtAvg);
+            } else{
+                dOutput=kD*(error-previousError)/loopTime;
+            }
+            if (!Double.isNaN(velocity)){
+                dOutput=-kD*velocity;
+            }
+
+            previousLoop=time;
+            previousError=error;
+            if (Math.abs(error)>derivativeStartThreshold) dOutput = 0;
+            return pOutput+iOutput+dOutput;
+        }
+        public double getPIDOutput(double target, double current){
+            return getPIDOutput(target,current,Double.NaN);
+        }
+        public void clearIntegral(){
+            integralSum=0;
+        } //Clear the accumulating integral term. Do this when a global target is changed
+        public void clearFivePointStencil(){ //Clear the five point stencil for derivative approximation
+            previousLoop=timer.time();
+            previousError=0;
+            previousFiveLoopTimes.clear();
+            previousFiveErrors.clear();
+        }
+        public void setPIDCoefficients(double kP, double kI, double kD){
+            this.kP=kP;
+            this.kI=kI;
+            this.kD=kD;
+        }
+        public void setIntegralStartThreshold(double integralStartThreshold){this.integralStartThreshold = integralStartThreshold;}
+        public void setDerivativeStartThreshold(double derivativeStartThreshold){this.derivativeStartThreshold = derivativeStartThreshold;}
+        public void setClearIntegralWindup(boolean clearIntegralWindup){this.clearIntegralWindup = clearIntegralWindup;}
+    }
+    public static class BreakServo extends ControlFunc<CRActuator<?>>{
+        private final double threshold;
+        public BreakServo(double threshold){
+            this.threshold = threshold;
+        }
+
+        @Override
+        public void runProcedure() {
+            if (Math.abs(system.getInstantReference("targetPosition")-parentActuator.getCurrentPosition())<threshold){
+                system.setOutput(0);
+            }
+        }
+    }
+    public static class PositionPID extends ControlFunc<CRActuator<?>>{ //Position PID controller for CRActuators
+        private final GenericPID PID;
+        private final Function<CRActuator<?>,Double> getPosition;
+        private final boolean clearIntegral;
+        public PositionPID(Function<CRActuator<?>,Double> getPosition, double kP, double kI, double kD, boolean clearIntegral){
+            this.getPosition = getPosition;
+            this.PID=new GenericPID(kP,kI,kD);
+            this.clearIntegral = clearIntegral;
+        }
+        public PositionPID(double kP, double kI, double kD){
+            this.getPosition = CRActuator::getCurrentPosition;
+            this.PID=new GenericPID(kP,kI,kD);
+            this.clearIntegral = true;
+        }
+        public PositionPID(double kP, double kI, double kD, boolean clearIntegral){
+            this.getPosition = CRActuator::getCurrentPosition;
+            this.PID=new GenericPID(kP,kI,kD);
+            this.clearIntegral = clearIntegral;
+        }
+        @Override
+        public void runProcedure(){
+            if (system.isStart()){
+                PID.clearIntegral();
+                PID.clearFivePointStencil();
+            }
+            if (system.isNewReference("targetPosition") && clearIntegral){
+                PID.clearIntegral();
+            }
+            double output=PID.getPIDOutput(system.getInstantReference("targetPosition"), getPosition.apply(parentActuator));
+            system.setOutput(output);
+        }
+        public void clearIntegral(){
+            PID.clearIntegral();
+        }
+        public void setPIDCoefficients(double kP, double kI, double kD){
+            PID.setPIDCoefficients(kP,kI,kD);
+        }
+        public PositionPID setIntegralStartThreshold(double integralStartThreshold){PID.setIntegralStartThreshold(integralStartThreshold); return this;}
+        public PositionPID setDerivativeStartThreshold(double derivativeStartThreshold){PID.setDerivativeStartThreshold(derivativeStartThreshold); return this;}
+        public PositionPID setClearIntegralWindup(boolean clearIntegralWindup){PID.setClearIntegralWindup(clearIntegralWindup); return this;}
+    }
+    public static class VelocityPID extends ControlFunc<BotMotor>{ //Position PIDF controller for CRActuators
+        private final GenericPID PID;
+        private final Function<BotMotor,Double> getVelocity;
+        private final boolean clearIntegral;
+        public VelocityPID(boolean clearIntegral,Function<BotMotor,Double> getVelocity, double kP, double kI, double kD){
+            this.clearIntegral=clearIntegral;
+            this.getVelocity = getVelocity;
+            this.PID=new GenericPID(kP,kI,kD);
+        }
+        public VelocityPID(Function<BotMotor,Double> getVelocity, double kP, double kI, double kD){
+            this.clearIntegral = true;
+            this.getVelocity = getVelocity;
+            this.PID=new GenericPID(kP,kI,kD);
+        }
+        public VelocityPID(double kP, double kI, double kD){
+            this.clearIntegral=true;
+            this.getVelocity = BotMotor::getVelocity;
+            this.PID=new GenericPID(kP,kI,kD);
+        }
+        @Override
+        public void runProcedure(){
+            if (system.isStart()){
+                PID.clearIntegral();
+                PID.clearFivePointStencil();
+            }
+            if (system.isNewReference("targetVelocity")&&clearIntegral){
+                PID.clearIntegral();
+            }
+            double output=PID.getPIDOutput(system.getInstantReference("targetVelocity"), getVelocity.apply(parentActuator));
+            system.setOutput(output);
+        }
+        public void clearIntegral(){
+            PID.clearIntegral();
+        }
+        public void setPIDCoefficients(double kP, double kI, double kD){
+            PID.setPIDCoefficients(kP,kI,kD);
+        }
+        public VelocityPID setIntegralStartThreshold(double integralStartThreshold){PID.setIntegralStartThreshold(integralStartThreshold); return this;}
+        public VelocityPID setDerivativeStartThreshold(double derivativeStartThreshold){PID.setDerivativeStartThreshold(derivativeStartThreshold); return this;}
+        public VelocityPID setClearIntegralWindup(boolean clearIntegralWindup){PID.setClearIntegralWindup(clearIntegralWindup); return this;}
+    }
+    public static class PositionLowerLimit extends ControlFunc<CRActuator<?>>{
+        private final double threshold;
+        private final Function<Double,Double> limit;
+        public PositionLowerLimit(double threshold, Function<Double,Double> limit){
+            this.threshold = threshold;
+            this.limit = limit;
+        }
+        public PositionLowerLimit(double threshold, double limit){
+            this(threshold, (pos)->limit);
+        }
+        @Override
+        public void runProcedure() {
+            if (!(Math.abs(system.getInstantReference("targetPosition") - parentActuator.getCurrentPosition())<threshold)){
+                double limitNum = Math.abs(this.limit.apply(parentActuator.getCurrentPosition()));
+                double absOutput = Math.abs(system.getOutput());
+                double output = Math.max(limitNum,absOutput);
+                system.setOutput(output*Math.signum(system.getInstantReference("targetPosition") - parentActuator.getCurrentPosition()));
+            }
+        }
+    }
+    public static class BasicFeedforward extends ControlFunc<CRActuator<?>>{
+        private final double kF;
+        private final String reference;
+        public BasicFeedforward(double kF, String reference){
+            this.kF = kF;
+            this.reference = reference;
+        }
+        @Override
+        public void runProcedure() {
+            system.setOutput(system.getOutput()+kF*system.getInstantReference(reference));
+        }
+    }
+    public static class ElevatorFeedforward extends ControlFunc<CRActuator<?>>{
+        public double kF;
+        public ElevatorFeedforward(double kF){
+            this.kF = kF;
+        }
+        @Override
+        public void runProcedure() {
+            system.setOutput(system.getOutput()+kF);
+        }
+    }
+    public static class ArmFeedforward extends ControlFunc<CRActuator<?>>{
+        public double kF;
+        public double referenceToRad;
+        public double angleAtZero;
+        public ArmFeedforward(double kF, double unitsPerRevolution, double angleAtZero){
+            this.kF = kF;
+            referenceToRad=(2*Math.PI)/unitsPerRevolution;
+            this.angleAtZero=angleAtZero;
+        }
+        @Override
+        public void runProcedure() {
+            system.setOutput(kF*Math.cos(system.getOutput()*referenceToRad+angleAtZero));
+        }
+    }
+    public static class CustomFeedforward extends ControlFunc<CRActuator<?>>{
+        public double kF;
+        public Supplier<Double> func;
+        public CustomFeedforward(double kF, Supplier<Double> func){
+            this.kF = kF; this.func=func;
+        }
+        @Override
+        public void runProcedure() {
+            system.setOutput(system.getOutput()+kF*func.get());
+        }
+    }
+    public static class TrapezoidalMotionProfile extends ControlFunc<Actuator<?>>{ //Trapezoidal motion profile for any actuator.
+        public enum Phase{
+            ACCEL,
+            CRUISE,
+            DECEL,
+            IDLE,
+            OFF
+        }
+        private double currentTarget;
+        private boolean newParams=true;
+        private double currentMaxVelocity;
+        private double currentAcceleration;
+        private double currentDeceleration;
+        private double accelDT;
+        private double decelDT;
+        private double cruiseDT;
+        private double accelDistance;
+        private double decelDistance;
+        private double cruiseDistance;
+        private double MAX_VELOCITY;
+        private double ACCELERATION;
+        private double lastLoopTime=0;
+        private double profileStartPos;
+        private double startVelocity;
+        private double targetVelocity;
+        private double instantTarget;
+        private Phase phase = Phase.IDLE;
+        private double elapsedTime;
+        public TrapezoidalMotionProfile(double maxVelocity, double acceleration){
+            this.MAX_VELOCITY=maxVelocity;
+            this.ACCELERATION=acceleration;
+        }
+        public void setNewParams(double maxVelocity, double acceleration){
+            this.MAX_VELOCITY=maxVelocity;
+            this.ACCELERATION=acceleration;
+            newParams=true;
+        }
+        @Override
+        public void runProcedure() {
+            if (system.isNewReference("targetPosition")||newParams||system.isStart()){
+                if (system.isStart()){
+                    instantTarget=parentActuator.getCurrentPosition();
+                    lastLoopTime=timer.time();
+                }
+                newParams=false;
+                createMotionProfile(system.getReference("targetPosition"));
+            }
+            system.setInstantReference("targetPosition", runMotionProfileOnce());
+        }
+        public void createMotionProfile(double target){
+            elapsedTime=0;
+            currentTarget = target;
+            profileStartPos = instantTarget;
+            double distance = target - profileStartPos;
+            if (distance!=0) {
+                startVelocity=targetVelocity;
+                currentMaxVelocity = MAX_VELOCITY * Math.signum(distance);
+                double accelSign=Math.signum(currentMaxVelocity - startVelocity);
+                if (accelSign==0){
+                    accelSign=Math.signum(distance);
+                }
+                currentAcceleration = ACCELERATION * accelSign;
+                currentDeceleration = -ACCELERATION * Math.signum(distance);
+                accelDT = (currentMaxVelocity - startVelocity) / currentAcceleration;
+                decelDT = (0 - currentMaxVelocity) / currentDeceleration;
+                accelDistance = startVelocity * accelDT + 0.5 * currentAcceleration * accelDT * accelDT;
+                decelDistance = currentMaxVelocity * decelDT + 0.5 * currentDeceleration * decelDT * decelDT;
+                cruiseDistance = Math.abs(distance - accelDistance - decelDistance) * Math.signum(currentMaxVelocity);
+                if (Math.abs(accelDistance + cruiseDistance + decelDistance) > Math.abs(distance)) {
+                    cruiseDistance=0;
+                    double halfExceededDistance = (distance - accelDistance - decelDistance) / 2;
+                    accelDistance = accelDistance + halfExceededDistance;
+                    accelDT = Math.max(
+                            (-startVelocity + Math.sqrt(Math.abs(startVelocity * startVelocity + 2 * currentAcceleration * accelDistance))) / (currentAcceleration),
+                            (-startVelocity - Math.sqrt(Math.abs(startVelocity * startVelocity + 2 * currentAcceleration * accelDistance))) / (currentAcceleration)
+                    );
+                    currentMaxVelocity = currentAcceleration * accelDT + startVelocity;
+                    decelDistance = decelDistance + halfExceededDistance;
+                    decelDT = Math.max(
+                            (-currentMaxVelocity + Math.sqrt(Math.abs(currentMaxVelocity * currentMaxVelocity + 2 * currentDeceleration * decelDistance))) / (currentDeceleration),
+                            (-currentMaxVelocity - Math.sqrt(Math.abs(currentMaxVelocity * currentMaxVelocity + 2 * currentDeceleration * decelDistance))) / (currentDeceleration)
+                    );
+                }
+                cruiseDT = cruiseDistance / currentMaxVelocity;
+                if (Double.isNaN(accelDT) || Double.isNaN(accelDistance) || Double.isNaN(decelDT) || Double.isNaN(decelDistance) || Double.isNaN(cruiseDT) || Double.isNaN(cruiseDistance) || accelDT < 0 || decelDT < 0 || cruiseDT < 0) {
+                    accelDT = 0;
+                    cruiseDT = 0;
+                    decelDT = 0;
+                    accelDistance = 0;
+                    cruiseDistance = 0;
+                    decelDistance = 0;
+                }
+            }
+            else{
+                accelDT=0;
+                cruiseDT=0;
+                decelDT=0;
+                accelDistance=0;
+                cruiseDistance=0;
+                decelDistance=0;
+            }
+        }
+        public double runMotionProfileOnce(){
+            double time=timer.time();
+            elapsedTime+=time-lastLoopTime;
+            lastLoopTime=time;
+            if (elapsedTime < accelDT){
+                phase= Phase.ACCEL;
+                targetVelocity = startVelocity + currentAcceleration * elapsedTime;
+                instantTarget = profileStartPos + startVelocity * elapsedTime + 0.5 * currentAcceleration * elapsedTime*elapsedTime;
+            }
+            else if (elapsedTime < accelDT+cruiseDT){
+                phase= Phase.CRUISE;
+                double cruiseCurrentDT = elapsedTime - accelDT;
+                targetVelocity = currentMaxVelocity;
+                instantTarget = profileStartPos + accelDistance + currentMaxVelocity * cruiseCurrentDT;
+            }
+            else if (elapsedTime < accelDT+cruiseDT+decelDT){
+                phase= Phase.DECEL;
+                double decelCurrentDT = elapsedTime - accelDT - cruiseDT;
+                targetVelocity = currentMaxVelocity + currentDeceleration * decelCurrentDT;
+                instantTarget = profileStartPos + accelDistance + cruiseDistance + currentMaxVelocity * decelCurrentDT + 0.5 * currentDeceleration * decelCurrentDT*decelCurrentDT;
+            }
+            else{
+                phase= Phase.IDLE;
+                targetVelocity=0;
+                instantTarget = currentTarget;
+            }
+            return instantTarget;
+        }
+        @Override
+        public void stopProcedure() {
+            phase= Phase.OFF; targetVelocity=0; instantTarget=0;
+        }
+        public HashMap<String,Double> getProfileData(){ //Returns data on the motion profile for debugging.
+            HashMap<String,Double> data = new HashMap<>();
+            data.put("instantTarget",instantTarget);
+            data.put("currentMaxVelocity",currentMaxVelocity);
+            data.put("accelDistance",accelDistance);
+            data.put("decelDistance",decelDistance);
+            data.put("cruiseDistance",cruiseDistance);
+            data.put("accelDT",accelDT);
+            data.put("cruiseDT",cruiseDT);
+            data.put("decelDT",decelDT);
+            data.put("targetVelocity",targetVelocity);
+            data.put("elapsedTime",elapsedTime);
+            data.put("profileStartPos",profileStartPos);
+            return data;
+        }
+        public double getProfileValue(String label){
+            return Objects.requireNonNull(getProfileData().get(label));
+        }
+        public Phase getPhase(){
+            return phase;
+        } //Gives the phase that the motion profile is in.
+    }
+
+
+    public static class ServoControl extends ControlFunc<BotServo>{ //Control function to get servos to their targets by calling setPosition. Automatically given to BotServos depending on the constructor you call.
+        @Override
+        public void runProcedure() {
+            system.setOutput(system.getInstantReference("targetPosition"));
+        }
+    }
+    public static class SetVelocity extends ControlFunc<BotMotor>{
+        @Override
+        public void runProcedure() {
+            system.setOutput(system.getInstantReference("targetVelocity"));
+        }
+    }
+    public static class CRBangBangControl extends ControlFunc<CRActuator<?>>{ //Likely will be used to get CRServos to their targets if they have no encoders with them. Sets a positive or negative power to the servo depending on where it is relative to the target. May create oscillations
+        private final Supplier<Double> powerFunc; //This control function moves the CRActuator to the target at a given power, which can change. That is stored here.
+        public CRBangBangControl(double power){
+            this.powerFunc=()->(power);
+        }
+        public CRBangBangControl(Supplier<Double> powerFunc){
+            this.powerFunc=powerFunc;
+        }
+        @Override
+        public void runProcedure() {
+            double currentPosition = parentActuator.getCurrentPosition();
+            if (Math.abs(system.getInstantReference("targetPosition")-currentPosition)>parentActuator.getErrorTol()){
+                system.setOutput(system.getOutput()+ powerFunc.get()*Math.signum(system.getInstantReference("targetPosition")-currentPosition));
+            }
+        }
+    }
+}
