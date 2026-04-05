@@ -14,6 +14,7 @@ import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.alliance;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.ballStorage;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.classifierBallCount;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.currentBallPath;
+import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.findMotif;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.flywheel;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.gamePhase;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.hoodDesired;
@@ -103,6 +104,7 @@ public class ClosePrimeSigmaConstants {
     public static final double[] FINAL_SHOOT = new double[]{65,105,Math.toRadians(180)};
     static {
         poses.put("start",new Pose(19.68, 121.72, Math.toRadians(144)));
+        poses.put("preloadShoot",new Pose(SHOOT[0],SHOOT[1],Math.toRadians(100)));
         poses.put("shoot",new Pose(SHOOT[0],SHOOT[1],SHOOT[2]));
         poses.put("secondSpikeCtrl",new Pose(41.07, 58.06));
         poses.put("secondSpike",new Pose(14.829, 58.805));
@@ -118,8 +120,8 @@ public class ClosePrimeSigmaConstants {
     public static double getHeading(String input){if (alliance==Inferno.Alliance.BLUE) return Objects.requireNonNull(poses.get(input)).getHeading(); else return mirrorHeading(Objects.requireNonNull(poses.get(input)).getHeading());}
     public static Command preloadShoot = new SequentialCommand(new SleepCommand(INITIAL_WAIT),
             new PedroCommand(b->
-                    b.addPath(new BezierLine(follower::getPose,getPose("shoot")))
-                    .setHeadingInterpolation(HeadingInterpolator.linear(getHeading("start"),getHeading("shoot"),0.5)),
+                    b.addPath(new BezierLine(follower::getPose,getPose("preloadShoot")))
+                    .setHeadingInterpolation(HeadingInterpolator.linear(getHeading("start"),getHeading("preloadShoot"),0.5)),
     true),
     shoot);
     public static Command secondSpike = new SequentialCommand(new PedroCommand(
@@ -129,7 +131,7 @@ public class ClosePrimeSigmaConstants {
                             getPose("secondSpikeCtrl"),
                             getPose("secondSpike")
                     ))
-                .setConstantHeadingInterpolation(getHeading("shoot"))
+                .setHeadingInterpolation(HeadingInterpolator.linear(getHeading("preloadShoot"),getHeading("shoot"),0.3))
                 .addParametricCallback(slowDownT,()->follower.setMaxPower(slowDownAmount))
             .addPath(
                     new BezierLine(
@@ -249,6 +251,7 @@ public class ClosePrimeSigmaConstants {
     public static void runOpMode(Inferno.Alliance alliance, LinearOpMode opMode){
         poses.put("shoot",new Pose(SHOOT[0],SHOOT[1],SHOOT[2]));
         initialize(opMode,new Inferno(),true,true);
+        Inferno.useTurretSOTM = false;
         useVelFeedforward = false;
         Inferno.motifDetected = false;
         turretOffsetFromAuto = 0;
@@ -350,20 +353,19 @@ public class ClosePrimeSigmaConstants {
         if (!pathList.isEmpty()) pathList.add(pathList.size()-1,new InstantCommand(()->poses.put("shoot",new Pose(FINAL_SHOOT[0], FINAL_SHOOT[1], FINAL_SHOOT[2]))));
         SequentialCommand mainPath = new SequentialCommand(pathList.toArray(new Command[0]));
         executor.setCommands(
+                new ParallelCommand(findMotif, new SequentialCommand(new SleepCommand(5),new InstantCommand(findMotif::stop))),
                 new SequentialCommand(
                         new ParallelCommand(
                                 mainPath,
                                 new SequentialCommand(
                                         new SleepCommand(29.3),
-                                        new ConditionalCommand(
-                                                new IfThen(
-                                                        ()->follower.getPose().distanceFrom(getPose("shoot"))>5,
-                                                        new SequentialCommand(
-                                                                new InstantCommand(mainPath::stop),
-                                                                park
-                                                        )
+                                        new ConditionalCommand(new IfThen(
+                                                ()->follower.getPose().distanceFrom(getPose("shoot"))>5,
+                                                new SequentialCommand(
+                                                        new InstantCommand(mainPath::stop),
+                                                        park
                                                 )
-                                        )
+                                        ))
                                 )
                         )
                 ),

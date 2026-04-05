@@ -193,6 +193,7 @@ public class FarPrimeSigmaConstants {
     );
     public static void runOpMode(Inferno.Alliance alliance, LinearOpMode opMode){
         initialize(opMode,new Inferno(),true,true);
+        Inferno.useTurretSOTM = false;
         useVelFeedforward = false;
         findMotif.reset();
         turretOffsetFromAuto = 0;

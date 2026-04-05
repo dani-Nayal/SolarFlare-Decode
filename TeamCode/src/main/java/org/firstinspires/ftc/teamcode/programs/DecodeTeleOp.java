@@ -87,6 +87,7 @@ public class DecodeTeleOp extends LinearOpMode {
     public void runOpMode(){
         Fisiks.FRICTION = FRICTION;
         gamePhase = GamePhase.TELEOP;
+        Inferno.useTurretSOTM = true;
         useVelFeedforward = true;
         initialize(this,new Inferno(),false,true);
         Components.telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());

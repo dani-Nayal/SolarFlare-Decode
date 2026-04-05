@@ -60,6 +60,7 @@ public class Inferno implements RobotConfig{
     public static final double TURRET_PITCH_OFFSET = 47;
     public static final double TURRET_YAW_RATIO = 1;
     public static final double TURRET_YAW_OFFSET = 0;
+    public static final double YAW_FEEDFORWARD = 0.05;
     public static BotMotor frontIntake  = new BotMotor("frontIntake", DcMotorSimple.Direction.FORWARD);
     public static BotMotor backIntake = new BotMotor("backIntake", DcMotorSimple.Direction.FORWARD);
     public static SyncedActuators<CRBotServo> sideRollers = new SyncedActuators<>(
@@ -99,6 +100,7 @@ public class Inferno implements RobotConfig{
     public static boolean useVelFeedforward = true;
     public final static double[] turret = new double[2];
     public static Pose relocalizePose;
+    public static boolean useTurretSOTM = true;
     public static double getVelProjectedFiring(){
         setTargetPoint();
         Pose pos = follower.getPose();
@@ -413,15 +415,16 @@ public class Inferno implements RobotConfig{
             }
             turret[1] = Math.toDegrees((yawBrackets[1] + yawBrackets[0])/2);
         }
-        if (gamePhase == GamePhase.AUTO) turret[1] = Math.toDegrees(Math.atan2(targetPoint[1] - pos.getY(),targetPoint[0] - pos.getX()));
+        if (!useTurretSOTM) turret[1] = Math.toDegrees(Math.atan2(targetPoint[1] - pos.getY(),targetPoint[0] - pos.getX()));
         double heading = Math.toDegrees(follower.getHeading());
         turret[1] = turret[1]%360;
         if ((turret[1]-heading)<=-150) turret[1] += 360;
         else if ((turret[1]-heading)>=249) turret[1] -= 360;
         hoodDesired = turret[0];
         yawDesired = turret[1];
+        double turretFeedforward = YAW_FEEDFORWARD*-Math.toDegrees(follower.getAngularVelocity());
         turretPitch.call((BotServo servo)->servo.setTarget(turret[0]*TURRET_PITCH_RATIO+TURRET_PITCH_OFFSET));
-        turretYaw.call(servo->servo.setTarget((turret[1]-heading)*TURRET_YAW_RATIO+TURRET_YAW_OFFSET));
+        turretYaw.call(servo->servo.setTarget((turret[1]-heading)*TURRET_YAW_RATIO+TURRET_YAW_OFFSET+turretFeedforward));
     });
     public static final Command stopAll = new ParallelCommand(
             sideRollers.command(servo->servo.setPowerCommand(0.0)),
