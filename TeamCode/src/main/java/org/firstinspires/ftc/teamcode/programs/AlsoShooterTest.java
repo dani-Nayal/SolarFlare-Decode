@@ -35,7 +35,7 @@ public class AlsoShooterTest extends LinearOpMode {
         waitForStart();
         turretPitch.call(servo->servo.switchControl("setPos"));
         flywheel.call(motor->motor.switchControl("VelocityPIDF"));
-        turretYaw.call(servo->servo.switchControl(""));
+        turretYaw.call(servo->servo.switchControl("setPos"));
         frontIntake.setPower(1.0);
         backIntake.setPower(1.0);
         frontIntakeGate.setPosition(110.7);

@@ -98,7 +98,8 @@ public class DecodeTeleOp extends LinearOpMode {
                 new RunResettingLoop(new InstantCommand(()->{if (gamepad1.dpad_left) {Inferno.alliance = Alliance.BLUE;}})),
                 new RunResettingLoop(new InstantCommand(()->{if (gamepad1.dpad_right) {Inferno.alliance = Alliance.RED;}}))
         );
-        turretYaw.call(servo->servo.setOffset(turretOffsetFromAuto));
+        turretYaw.get("turretYawTop").setOffset(turretOffsetFromAuto-0.5);
+        turretYaw.get("turretYawBottom").setOffset(turretOffsetFromAuto+0.5);
         executor.runLoop(this::opModeInInit);
         Components.activateActuatorControl();
         breakFollowing();

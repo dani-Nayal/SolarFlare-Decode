@@ -12,6 +12,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareDevice;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.PwmControl;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -912,6 +913,7 @@ public abstract class Components {
             super.initDevice();
             if (!Objects.isNull(getDevice())){
                 getDevice().setDirection(direction);
+                if (getDevice() instanceof PwmControl) ((PwmControl) getDevice()).setPwmRange(new PwmControl.PwmRange(500.0,2500.0));
             }
             this.setTarget(initialTarget);
         }
