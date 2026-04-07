@@ -175,6 +175,10 @@ public class DecodeTeleOp extends LinearOpMode {
 
         );
         executor.setWriteToTelemetry(()->{
+            Components.telemetry.addData("Yaw Target",turretYaw.get("turretYawTop").getTarget());
+            Components.telemetry.addData("Target Point X",targetPoint[0]);
+            Components.telemetry.addData("Target Point Y",targetPoint[1]);
+            Components.telemetry.addData("Target Point Z",targetPoint[2]);
             if (aprilTag.isBusy()) counter++;
             Components.telemetry.addData("Counter",counter);
             Components.telemetry.addData("Is Busy",aprilTag.isBusy());

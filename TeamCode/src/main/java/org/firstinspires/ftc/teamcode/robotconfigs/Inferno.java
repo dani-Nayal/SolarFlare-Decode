@@ -49,8 +49,8 @@ public class Inferno implements RobotConfig{
     public static SyncedActuators<BotMotor> flywheel;
     public static double targetFlywheelVelocity;
     public static SyncedActuators<BotServo> turretYaw = new SyncedActuators<>(
-            new BotServo("turretYawTop", Servo.Direction.REVERSE,422,5,355,0),
-            new BotServo("turretYawBottom", Servo.Direction.FORWARD,422,5,355,0)
+            new BotServo("turretYawTop", Servo.Direction.REVERSE,422,5,355,Double.NaN),
+            new BotServo("turretYawBottom", Servo.Direction.FORWARD,422,5,355,Double.NaN)
     );
     public static SyncedActuators<BotServo> turretPitch = new SyncedActuators<>(
             new BotServo("turretPitchLeft", Servo.Direction.FORWARD, 422,5,180,102),
@@ -60,7 +60,7 @@ public class Inferno implements RobotConfig{
     public static final double TURRET_PITCH_OFFSET = 47;
     public static final double TURRET_YAW_RATIO = 1.0/(48.0/20.0 * 39.0/83.0);
     public static final double TURRET_YAW_OFFSET = 143.24;
-    public static final double YAW_FEEDFORWARD = 0.05;
+    public static final double YAW_FEEDFORWARD = 0.09;
     public static BotMotor frontIntake  = new BotMotor("frontIntake", DcMotorSimple.Direction.FORWARD);
     public static BotMotor backIntake = new BotMotor("backIntake", DcMotorSimple.Direction.FORWARD);
     public static SyncedActuators<CRBotServo> sideRollers = new SyncedActuators<>(
@@ -83,8 +83,8 @@ public class Inferno implements RobotConfig{
     public static ShotType shotType = ShotType.NORMAL;
     public static final double[] targetPoint = new double[3];
     public static boolean motifShootAll = true;
-    private final static double TRANSFER_SELECT_DELAY = 0.03;
-    private final static double TRANSFER_REBOOST_DELAY = 0.07;
+    private final static double TRANSFER_SELECT_DELAY = 0.0225;
+    private final static double TRANSFER_REBOOST_DELAY = 0.053;
     public static Color[] motif = new Color[]{Color.PURPLE,Color.GREEN,Color.PURPLE};
     public static double classifierBallCount = 0;
     public static Alliance alliance = Alliance.RED;
@@ -149,17 +149,15 @@ public class Inferno implements RobotConfig{
         turretPitch.call((BotServo servo)->servo.setPositionCacheThreshold(0.2));
         frontIntake.setKeyPowers(
                 new String[]{"intake","otherSideIntake","transfer","otherSideTransfer","stopped","expel","frontDrive","otherFrontDrive","sideSelect"},
-                new double[]{1.0,-1.0,1.0,0.75,0,-0.8,1,0.7,0.0}
+                new double[]{1.0,-1.0,1.0,0.7,0,-0.8,1,0.75,0.0}
         );
         backIntake.setKeyPowers(
                 new String[]{"intake","otherSideIntake","transfer","otherSideTransfer","stopped","expel","frontDrive","otherFrontDrive","sideSelect"},
-                new double[]{1.0,-1.0,1.0,0.75,0,-1.0,1,0.7,0.0}
+                new double[]{1.0,-1.0,1.0,0.7,0,-1.0,1,0.75,0.0}
         );
-        frontIntakeGate.setKeyPositions(new String[]{"open", "closed","backoff"}, new double[]{110.7,56.4,86.4});
-        backIntakeGate.setKeyPositions(new String[]{"open", "closed","backoff"}, new double[]{133,73.9,103.9});
-        transferGate.setKeyPositions(new String[]{"open","frontDrive","closed"},new double[]{155.5,131.08,86.4});
-        frontIntake.setZeroPowerFloat();
-        backIntake.setZeroPowerFloat();
+        frontIntakeGate.setKeyPositions(new String[]{"open", "closed","backoff"}, new double[]{115.7,56.4,86.4});
+        backIntakeGate.setKeyPositions(new String[]{"open", "closed","backoff"}, new double[]{138,73.9,103.9});
+        transferGate.setKeyPositions(new String[]{"open","closed"},new double[]{155.5,86.4});
         turretYaw.call(servo->servo.setPositionCacheThreshold(0.001));
         turretPitch.call(servo->servo.setPositionCacheThreshold(0.001));
     }
@@ -301,8 +299,9 @@ public class Inferno implements RobotConfig{
         );
     public static final Command stopIntake = new ParallelCommand(
         new SequentialCommand(
-            transferGate.instantSetTargetCommand("frontDrive"),
-            sideRollers.command(servo->servo.setPowerCommand(0.5)),
+            new InstantCommand(Inferno::readBallStorage),
+            transferGate.instantSetTargetCommand("closed"),
+            sideRollers.command(servo->servo.setPowerCommand(1.0)),
             new ConditionalCommand(
                     new IfThen(
                             ()->prevState==RobotState.INTAKE_BACK,
@@ -332,9 +331,10 @@ public class Inferno implements RobotConfig{
                             )
                     )
             ),
-            new SleepCommand(0.4),
+            new SleepCommand(0.31),
+            transferGate.instantSetTargetCommand("open"),
+            new SleepCommand(0.09),
             new ParallelCommand(
-                    transferGate.instantSetTargetCommand("open"),
                     sideRollers.command(servo->servo.setPowerCommand(0.0)),
                     frontIntake.setPowerCommand("stopped"),
                     backIntake.setPowerCommand("stopped"),
@@ -347,7 +347,6 @@ public class Inferno implements RobotConfig{
             new ConditionalCommand(new IfThen(
                 ()->shotType==ShotType.MOTIF,
                 new SequentialCommand(
-                    new InstantCommand(Inferno::readBallStorage),
                     new RunResettingLoop(new InstantCommand(()->{ArrayList<BallPath> plan = findMotifShotPlan(motifShootAll).getLeft(); if (!plan.isEmpty()) currentBallPath=plan.get(0);}))
                 )
             ))
@@ -378,10 +377,14 @@ public class Inferno implements RobotConfig{
             frontIntakeGate.instantSetTargetCommand("closed")
     );
     public static final Command transfer = new ParallelCommand(
+            new InstantCommand(Inferno::readBallStorage),
             new ConditionalCommand(
                     new IfThen(
                             () -> shotType == ShotType.NORMAL,
-                            new ParallelCommand(backTransfer,new InstantCommand(()-> currentBallPath = BallPath.LOW))
+                            new ConditionalCommand(
+                                    new IfThen(()->Objects.nonNull(ballStorage[2]),backTransfer),
+                                    new IfThen(()->true,frontTransfer)
+                            )
                     ),
                     new IfThen(
                             () -> shotType == ShotType.MOTIF,
@@ -423,7 +426,7 @@ public class Inferno implements RobotConfig{
         yawDesired = turret[1];
         double turretFeedforward = YAW_FEEDFORWARD*-Math.toDegrees(follower.getAngularVelocity());
         turretPitch.call((BotServo servo)->servo.setTarget(turret[0]*TURRET_PITCH_RATIO+TURRET_PITCH_OFFSET));
-        turretYaw.call(servo->servo.setTarget((turret[1]-heading)*TURRET_YAW_RATIO+TURRET_YAW_OFFSET));
+        turretYaw.call(servo->servo.setTarget((turret[1]-heading)*TURRET_YAW_RATIO+TURRET_YAW_OFFSET+turretFeedforward));
     });
     public static final Command stopAll = new ParallelCommand(
             sideRollers.command(servo->servo.setPowerCommand(0.0)),

@@ -915,7 +915,7 @@ public abstract class Components {
                 getDevice().setDirection(direction);
                 if (getDevice() instanceof PwmControl) ((PwmControl) getDevice()).setPwmRange(new PwmControl.PwmRange(500.0,2500.0));
             }
-            this.setTarget(initialTarget);
+            if (!Double.isNaN(initialTarget)) this.setTarget(initialTarget);
         }
         @Actuate
         public void setPosition(double position){ //Accepts position in degrees by default and sets the servos position to that.
