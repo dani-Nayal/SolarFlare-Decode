@@ -3,6 +3,8 @@ package org.firstinspires.ftc.teamcode.programs;
 import static org.firstinspires.ftc.teamcode.base.Commands.executor;
 import static org.firstinspires.ftc.teamcode.base.Components.initialize;
 import static org.firstinspires.ftc.teamcode.pedroPathing.Pedro.follower;
+import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_YAW_OFFSET;
+import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_YAW_RATIO;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.backIntake;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.backIntakeGate;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.flywheel;
@@ -50,7 +52,7 @@ public class AlsoShooterTest extends LinearOpMode {
                             Pose pos = follower.getPose();
                             targetFlywheelVelocity = Inferno.VelRegression.regressFormula(Math.sqrt((targetPoint[0]-pos.getX())*(targetPoint[0]-pos.getX()) + (targetPoint[1]-pos.getY())*(targetPoint[1]-pos.getY())));
                             targetFlywheelVelocity = Math.min(Math.max(targetFlywheelVelocity,800),1500);
-                            turretYaw.call(servo->servo.setTarget(Math.toDegrees(Math.atan2(targetPoint[1] - pos.getY(),targetPoint[0] - pos.getX())) - follower.getHeading()));
+                            turretYaw.call(servo->servo.setTarget((Math.toDegrees(Math.atan2(targetPoint[1] - pos.getY(),targetPoint[0] - pos.getX())) - follower.getHeading())*TURRET_YAW_RATIO+TURRET_YAW_OFFSET));
                         }
                 ),
         Pedro.updatePoseCommand());
