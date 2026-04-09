@@ -48,6 +48,7 @@ public class AlsoShooterTest extends LinearOpMode {
                             Pose pos = follower.getPose();
                             targetFlywheelVelocity = Inferno.VelRegression.regressFormula(Math.sqrt((targetPoint[0]-pos.getX())*(targetPoint[0]-pos.getX()) + (targetPoint[1]-pos.getY())*(targetPoint[1]-pos.getY())));
                             targetFlywheelVelocity = Math.min(Math.max(targetFlywheelVelocity,800),1500);
+                            turretYaw.call(servo->servo.setTarget(Math.toDegrees(Math.atan2(targetPoint[1] - pos.getY(),targetPoint[0] - pos.getX())) - follower.getHeading()));
                         }
                 ),
         Pedro.updatePoseCommand());

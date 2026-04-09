@@ -893,7 +893,6 @@ public abstract class Components {
         public BotServo(String name, Servo.Direction direction, Function<Servo, Double> getCurrentPosition, int currentPosPollingInterval, double errorTol, double defaultTimeout, double range, //Degree range that servo is programmed to
                         double initialTarget, String[] controlFuncKeys, ControlSystem<BotServo>... controlFuncs) {
             super(name, getCurrentPosition, currentPosPollingInterval, errorTol, defaultTimeout, controlFuncKeys, controlFuncs);
-            setTarget(initialTarget);
             this.direction = direction;
             this.range=range;
             this.initialTarget = initialTarget;

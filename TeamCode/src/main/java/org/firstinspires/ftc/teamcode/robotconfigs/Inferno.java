@@ -49,8 +49,8 @@ public class Inferno implements RobotConfig{
     public static SyncedActuators<BotMotor> flywheel;
     public static double targetFlywheelVelocity;
     public static SyncedActuators<BotServo> turretYaw = new SyncedActuators<>(
-            new BotServo("turretYawTop", Servo.Direction.REVERSE,422,5,355,Double.NaN),
-            new BotServo("turretYawBottom", Servo.Direction.FORWARD,422,5,355,Double.NaN)
+            new BotServo("turretYawTop", Servo.Direction.REVERSE,422,5,355,180),
+            new BotServo("turretYawBottom", Servo.Direction.FORWARD,422,5,355,180)
     );
     public static SyncedActuators<BotServo> turretPitch = new SyncedActuators<>(
             new BotServo("turretPitchLeft", Servo.Direction.FORWARD, 422,5,180,102),
@@ -361,7 +361,7 @@ public class Inferno implements RobotConfig{
             transferGate.instantSetTargetCommand("open")
     );
     public static final ParallelCommand frontIntakeAndTransfer = new ParallelCommand(
-            sideRollers.command(servo->servo.setPowerCommand(0.0)),
+            sideRollers.command(servo->servo.setPowerCommand(1.0)),
             transferGate.instantSetTargetCommand("open"),
             frontIntake.setPowerCommand("transfer"),
             backIntake.setPowerCommand("transfer"),
@@ -369,7 +369,7 @@ public class Inferno implements RobotConfig{
             backIntakeGate.instantSetTargetCommand("closed")
     );
     public static final ParallelCommand backIntakeAndTransfer = new ParallelCommand(
-            sideRollers.command(servo->servo.setPowerCommand(0.0)),
+            sideRollers.command(servo->servo.setPowerCommand(1.0)),
             transferGate.instantSetTargetCommand("open"),
             frontIntake.setPowerCommand("transfer"),
             backIntake.setPowerCommand("transfer"),
