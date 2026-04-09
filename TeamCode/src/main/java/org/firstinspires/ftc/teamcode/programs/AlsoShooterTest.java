@@ -9,6 +9,7 @@ import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.flywheel;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.frontIntake;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.frontIntakeGate;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.setTargetPoint;
+import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.sideRollers;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.targetFlywheelVelocity;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.targetPoint;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.transferGate;
@@ -38,6 +39,7 @@ public class AlsoShooterTest extends LinearOpMode {
         turretYaw.call(servo->servo.switchControl("setPos"));
         frontIntake.setPower(1.0);
         backIntake.setPower(1.0);
+        sideRollers.call(servo->servo.setPowerCommand(1.0));
         frontIntakeGate.setPosition(110.7);
         backIntakeGate.setPosition(133);
         transferGate.setPosition(148.5);
