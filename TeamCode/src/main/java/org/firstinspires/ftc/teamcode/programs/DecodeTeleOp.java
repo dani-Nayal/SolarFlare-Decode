@@ -18,7 +18,6 @@ import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.leftRear;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.loopFSM;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.panic;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.physicsTime;
-import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.relocalizePose;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.rightFront;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.rightRear;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.robotState;
@@ -61,7 +60,8 @@ import java.util.Objects;
 @Config
 public class DecodeTeleOp extends LinearOpMode {
     public int counter = 0;
-    public static double FRICTION = Fisiks.FRICTION;
+    public static double LOW_FRICTION = Fisiks.LOW_FRICTION;
+    public static double HIGH_FRICTION = Fisiks.HIGH_FRICTION;
     private boolean holdingPosition = false;
     private double lastTime = 0;
     private double previousBallCount = -1;
@@ -85,7 +85,8 @@ public class DecodeTeleOp extends LinearOpMode {
     boolean followerMade = false;
     @Override
     public void runOpMode(){
-        Fisiks.FRICTION = FRICTION;
+        Fisiks.LOW_FRICTION = LOW_FRICTION;
+        Fisiks.HIGH_FRICTION = HIGH_FRICTION;
         gamePhase = GamePhase.TELEOP;
         Inferno.useTurretSOTM = true;
         useVelFeedforward = true;

@@ -60,7 +60,7 @@ public class Inferno implements RobotConfig{
     public static final double TURRET_PITCH_OFFSET = 47;
     public static final double TURRET_YAW_RATIO = 1.0/(48.0/20.0 * 39.0/83.0);
     public static final double TURRET_YAW_OFFSET = 143.24;
-    public static final double YAW_FEEDFORWARD = 0.09;
+    public static final double YAW_FEEDFORWARD = 0.00025;
     public static BotMotor frontIntake  = new BotMotor("frontIntake", DcMotorSimple.Direction.FORWARD);
     public static BotMotor backIntake = new BotMotor("backIntake", DcMotorSimple.Direction.FORWARD);
     public static SyncedActuators<CRBotServo> sideRollers = new SyncedActuators<>(
@@ -407,7 +407,7 @@ public class Inferno implements RobotConfig{
         }
         else {
             FisiksCache.clearCache(); physicsTime = 0;
-            Fisiks.buildPhysics(targetPoint, pos, follower.getVelocity(), flywheel.get("flywheelLeft").getVelocity()); Fisiks.pitchTimeGuesses();
+            Fisiks.buildPhysics(currentBallPath, targetPoint, pos, follower.getVelocity(), flywheel.get("flywheelLeft").getVelocity()); Fisiks.pitchTimeGuesses();
             if (currentBallPath==BallPath.LOW){
                 Fisiks.yawGuesses(Fisiks.pitchTimeGuesses[0],Fisiks.pitchTimeGuesses[1]);
                 turret[0] = Math.toDegrees(pitchTimeGuesses[0]);
@@ -424,7 +424,7 @@ public class Inferno implements RobotConfig{
         else if ((turret[1]-heading)>=249) turret[1] -= 360;
         hoodDesired = turret[0];
         yawDesired = turret[1];
-        double turretFeedforward = YAW_FEEDFORWARD*-Math.toDegrees(follower.getAngularVelocity());
+        double turretFeedforward = Math.max(-50,Math.min(50,YAW_FEEDFORWARD*-Math.signum(follower.getAngularVelocity())*Math.toDegrees(follower.getAngularVelocity()*follower.getAngularVelocity())));
         turretPitch.call((BotServo servo)->servo.setTarget(turret[0]*TURRET_PITCH_RATIO+TURRET_PITCH_OFFSET));
         turretYaw.call(servo->servo.setTarget((turret[1]-heading)*TURRET_YAW_RATIO+TURRET_YAW_OFFSET+turretFeedforward));
     });

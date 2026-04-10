@@ -22,7 +22,8 @@ public abstract class Fisiks {
     final static double BALL_RAD = 2.5;
     final static double SURFACE_SPEED_RATIO = 0.7055555556;
 
-    public static double FRICTION = 0.8;
+    public static double LOW_FRICTION = 0.8;
+    public static double HIGH_FRICTION = 0.8;
     final static double AUTHORITY = 0.25;
     final static double TRANSLATIONAL_DRAG = 0.5;
     final static double ANGULAR_DRAG = 0;
@@ -342,7 +343,7 @@ public abstract class Fisiks {
             return false;
         }
     }
-    public static void buildPhysics(double[] targetPoint, Pose pos, Vector botVel, double flywheelVel){
+    public static void buildPhysics(Inferno.BallPath currentBallPath, double[] targetPoint, Pose pos, Vector botVel, double flywheelVel){
         double xPos = pos.getX();
         double yPos = pos.getY();
         Fisiks.targetPoint[0] = targetPoint[0] - xPos; Fisiks.targetPoint[1] = targetPoint[1] - yPos; Fisiks.targetPoint[2] = targetPoint[2] - HEIGHT;
@@ -357,7 +358,7 @@ public abstract class Fisiks {
         //double backVel = flyVel*SURFACE_SPEED_RATIO;
         //Fisiks.initSpeed = FRICTION*(AUTHORITY * backVel+(1- AUTHORITY)*flyVel);
         //Fisiks.initSpin = FRICTION*((min(2*AUTHORITY,1)*backVel + (1-min(2*AUTHORITY,1))*flyVel) - ((1 - min(2-2*AUTHORITY,1))*backVel + min(2-2*AUTHORITY,1)*flyVel))/BALL_RAD;
-        Fisiks.initSpeed = FRICTION * flyVel;
+        Fisiks.initSpeed = (currentBallPath== Inferno.BallPath.HIGH) ? HIGH_FRICTION:LOW_FRICTION * flyVel;
     }
     public static final double[] yawBrackets = new double[2];
     public static final double[] pitchTimeGuesses = new double[4];
@@ -450,7 +451,7 @@ public abstract class Fisiks {
     public static double[] runPhysics(Inferno.BallPath currentBallPath, double[] targetPoint, Pose pos, Vector botVel, double flywheelVel){
         Fisiks.currentBallPath = currentBallPath;
         Solver.resetJacobian = true;
-        buildPhysics(targetPoint,pos,botVel,flywheelVel);
+        buildPhysics(currentBallPath,targetPoint,pos,botVel,flywheelVel);
         pitchTimeGuesses();
         double initialPitchGuess;
         double initialTimeGuess;
