@@ -424,7 +424,7 @@ public class Inferno implements RobotConfig{
         else if ((turret[1]-heading)>=249) turret[1] -= 360;
         hoodDesired = turret[0];
         yawDesired = turret[1];
-        double turretFeedforward = Math.max(-50,Math.min(50,YAW_FEEDFORWARD*-Math.signum(follower.getAngularVelocity())*Math.toDegrees(follower.getAngularVelocity()*follower.getAngularVelocity())));
+        double turretFeedforward = Math.max(-50,Math.min(50,YAW_FEEDFORWARD*-Math.signum(follower.getAngularVelocity())*Math.toDegrees(follower.getAngularVelocity())*Math.toDegrees(follower.getAngularVelocity())));
         turretPitch.call((BotServo servo)->servo.setTarget(turret[0]*TURRET_PITCH_RATIO+TURRET_PITCH_OFFSET));
         turretYaw.call(servo->servo.setTarget((turret[1]-heading)*TURRET_YAW_RATIO+TURRET_YAW_OFFSET+turretFeedforward));
     });
