@@ -17,13 +17,13 @@ public abstract class Fisiks {
     final static double AIR_DENSITY = 0.020074;
     final static double GRAVITY = -386.089;
     final static double HEIGHT = 10.748;
-    final static double TICKS_TO_RAD = 2*PI/28;
+    final static double TICKS_TO_RAD = 2*PI/28*23/33;
     final static double WHEEL_RAD = 1.41732;
     final static double BALL_RAD = 2.5;
     final static double SURFACE_SPEED_RATIO = 0.7055555556;
 
-    public static double LOW_FRICTION = 0.8;
-    public static double HIGH_FRICTION = 0.8;
+    public static double LOW_FRICTION = 0.7927;
+    public static double HIGH_FRICTION = 0.7927;
     final static double AUTHORITY = 0.25;
     final static double TRANSLATIONAL_DRAG = 0.5;
     final static double ANGULAR_DRAG = 0;
@@ -385,6 +385,7 @@ public abstract class Fisiks {
 
         yawBrackets[0] = Math.min(bracketOvercorrect, bracketUndercorrect);
         yawBrackets[1] = Math.max(bracketOvercorrect, bracketUndercorrect);
+        if (botVelX*botVelX+botVelY*botVelY<VEL_THRESHOLD) {yawBrackets[0] = baseYaw; yawBrackets[1] = baseYaw;}
     }
     public static void pitchTimeGuesses() {
         pitchTimeGuesses[0] = Math.toRadians(45); pitchTimeGuesses[1] = 0.7; pitchTimeGuesses[2] = Math.toRadians(65); pitchTimeGuesses[3] = 1.1;

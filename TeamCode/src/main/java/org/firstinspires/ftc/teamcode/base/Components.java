@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.base;
 
 import static org.firstinspires.ftc.teamcode.base.Commands.executor;
+import static java.lang.Double.NaN;
 import static java.lang.Double.isNaN;
 
 import com.qualcomm.hardware.lynx.LynxModule;
@@ -914,6 +915,7 @@ public abstract class Components {
                 getDevice().setDirection(direction);
                 if (getDevice() instanceof PwmControl) ((PwmControl) getDevice()).setPwmRange(new PwmControl.PwmRange(500.0,2500.0));
             }
+            currCommandedPos = NaN;
             if (!Double.isNaN(initialTarget)) this.setTarget(initialTarget);
         }
         @Actuate
