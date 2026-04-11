@@ -797,7 +797,7 @@ public class Inferno implements RobotConfig{
     public static void setTargetPoint(){
         if (alliance==Alliance.RED) targetPoint[0] = 141.5; else targetPoint[0] = 2.5;
         if (follower.getPose().getY()>=108) targetPoint[1] = 140; else targetPoint[1] = 141.5;
-        //if (shotType == ShotType.MOTIF && currentBallPath==BallPath.LOW) targetPoint[1]-=2;
+        if (shotType == ShotType.MOTIF && currentBallPath==BallPath.LOW) targetPoint[1]-=2;
         if (follower.getPose().distanceFrom(new Pose(targetPoint[0],targetPoint[1]))>130) targetPoint[2] = 43; else targetPoint[2] = 46;
         if (currentBallPath == BallPath.HIGH) targetPoint[2] = 34;
     }
