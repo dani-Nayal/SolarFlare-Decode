@@ -5,7 +5,9 @@ import static org.firstinspires.ftc.teamcode.base.Components.getHardwareMap;
 import static org.firstinspires.ftc.teamcode.base.Components.telemetry;
 import static org.firstinspires.ftc.teamcode.base.Components.timer;
 import static org.firstinspires.ftc.teamcode.pedroPathing.Pedro.follower;
+import static org.firstinspires.ftc.teamcode.robotconfigs.Fisiks.Solver.out;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Fisiks.pitchTimeGuesses;
+import static org.firstinspires.ftc.teamcode.robotconfigs.Fisiks.runPhysics;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Fisiks.success;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Fisiks.yawBrackets;
 
@@ -56,7 +58,7 @@ public class Inferno implements RobotConfig{
     public static final double TURRET_PITCH_OFFSET = 47;
     public static final double TURRET_YAW_RATIO = 1.057777777777676767/(48.0/20.0 * 39.0/83.0);
     public static final double TURRET_YAW_OFFSET = 143.24-13.0/3;
-    public static final double YAW_FEEDFORWARD = 0.09;
+    public static final double YAW_FEEDFORWARD = 0.088;
     public static BotMotor frontIntake  = new BotMotor("frontIntake", DcMotorSimple.Direction.FORWARD);
     public static BotMotor backIntake = new BotMotor("backIntake", DcMotorSimple.Direction.FORWARD);
     public static SyncedActuators<CRBotServo> sideRollers = new SyncedActuators<>(
@@ -114,7 +116,7 @@ public class Inferno implements RobotConfig{
         double sideX = 1 / distance * -(targetPoint[1] - pos.getY());
         double sideY = 1 / distance * (targetPoint[0] - pos.getX());
         double movementPart = Math.toDegrees(-(sideX*vel.getXComponent() + sideY*vel.getYComponent())/distance);
-        double angularPart = -follower.getAngularVelocity();
+        double angularPart = -Math.toDegrees(follower.getAngularVelocity());
         return movementPart+angularPart;
     }
 
@@ -138,17 +140,19 @@ public class Inferno implements RobotConfig{
                                 new Clamp(), new CustomFeedforward(1, ()->{
                                     if (((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()<targetFlywheelVelocity-20)) {return 1.0;}
                                     if ((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+35){return -0.5;}
-                                    else if (flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+85){return -0.5;}
-                                    else {return 0.0;}})
+                                    else if (flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+85){return -1.0;}
+                                    else {return 0.0;}}),
+                                new Clamp()
                         )),
                 new BotMotor("flywheelRight", DcMotorSimple.Direction.FORWARD, 0, 0, new String[]{"VelocityPIDF"},
                         new ControlSystem<>(new String[]{"targetVelocity"}, List.of(() -> targetFlywheelVelocity), rightVelocityPID, new CustomFeedforward(1.057, ()->targetFlywheelVelocity/MaxVelRegression.regressFormula(voltageSensorRead.get())),
                                 new CustomFeedforward(0.05, ()->{if (useVelFeedforward && Math.abs(targetFlywheelVelocity-flywheel.get("flywheelLeft").getVelocity())>40) return getFlywheelVelProjected(); else return 0.0;}),
                                 new Clamp(), new CustomFeedforward(1, ()->{
                                     if (((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()<targetFlywheelVelocity-15)) {return 1.0;}
-                                    else if ((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+54){return -0.5;}
-                                    else if (flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+85){return -0.5;}
-                                    else {return 0.0;}})
+                                    else if ((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+54){return -1.0;}
+                                    else if (flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+85){return -1.0;}
+                                    else {return 0.0;}}),
+                                new Clamp()
                         ))
         );
         turretYaw.call(servo -> servo.setTargetBounds(() -> 210.0 * TURRET_YAW_RATIO + TURRET_YAW_OFFSET, () -> -110.0 * TURRET_YAW_RATIO + TURRET_YAW_OFFSET));
@@ -407,9 +411,15 @@ public class Inferno implements RobotConfig{
         targetFlywheelVelocity = Math.min(Math.max(targetFlywheelVelocity,800*33.0/23),1500*33.0/23);
         if (robotState == RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT) {
             double startTime = timer.time();
+            /*
             FisiksCache.runCachedPhysics();
             turret[0] = FisiksCache.output[0];
             turret[1] = FisiksCache.output[1];
+            */
+            Fisiks.runPhysics(currentBallPath, targetPoint, follower.getPose(), follower.getVelocity(), targetFlywheelVelocity);
+            turret[0] = Math.toDegrees(out[0]);
+            turret[1] = Math.toDegrees(out[1]);
+            if (!success) telemetry.addLine("PHYSICS FAILED TO CONVERGE");
             double endTime = timer.time(); physicsTime = endTime-startTime;
         }
         else {
@@ -424,7 +434,6 @@ public class Inferno implements RobotConfig{
             }
             turret[1] = Math.toDegrees((yawBrackets[1] + yawBrackets[0])/2);
         }
-        if (currentBallPath == BallPath.LOW) turret[0] = Math.min(50,turret[0]);
         if (!useTurretSOTM || currentBallPath == BallPath.HIGH) turret[1] = Math.toDegrees(Math.atan2(targetPoint[1] - pos.getY(),targetPoint[0] - pos.getX()));
         double heading = Math.toDegrees(follower.getHeading());
         turret[1] = turret[1]%360;
@@ -798,14 +807,14 @@ public class Inferno implements RobotConfig{
         if (alliance==Alliance.RED) targetPoint[0] = 141.5; else targetPoint[0] = 2.5;
         if (follower.getPose().getY()>=108) targetPoint[1] = 140; else targetPoint[1] = 141.5;
         if (shotType == ShotType.MOTIF && currentBallPath==BallPath.LOW) targetPoint[1]-=2;
-        if (follower.getPose().distanceFrom(new Pose(targetPoint[0],targetPoint[1]))>130) targetPoint[2] = 43; else targetPoint[2] = 46;
+        if (follower.getPose().distanceFrom(new Pose(targetPoint[0],targetPoint[1]))>130) targetPoint[2] = 46; else targetPoint[2] = 46;
         if (currentBallPath == BallPath.HIGH) targetPoint[2] = 34;
     }
     public static class Clamp extends ControlFunc<BotMotor>{
         @Override
         public void runProcedure() {
             double output = system.getOutput();
-            if (output>1) output=1; else if (output<-1) output=-1;
+            if (output>1) output=1; else if (output<0) output=0;
             system.setOutput(output);
         }
     }
@@ -828,9 +837,9 @@ public class Inferno implements RobotConfig{
                 output[1] = Objects.requireNonNull(cache.get((int) flywheel.get("flywheelLeft").getVelocity()))[1];
                 telemetry.addLine("CACHED");
             } else {
-                Fisiks.runPhysics(currentBallPath, targetPoint, follower.getPose(), follower.getVelocity(), flywheel.get("flywheelLeft").getVelocity());
-                output[0] = Math.toDegrees(Fisiks.Solver.out[0]);
-                output[1] = Math.toDegrees(Fisiks.Solver.out[1]);
+                runPhysics(currentBallPath, targetPoint, follower.getPose(), follower.getVelocity(), flywheel.get("flywheelLeft").getVelocity());
+                output[0] = Math.toDegrees(out[0]);
+                output[1] = Math.toDegrees(out[1]);
                 cache.put((int) flywheel.get("flywheelLeft").getVelocity(), new Double[]{output[0],output[1]});
                 successCache.put((int) flywheel.get("flywheelLeft").getVelocity(), success);
                 telemetry.addLine("RUNNING");

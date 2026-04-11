@@ -10,6 +10,8 @@ import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.backIntakeGate
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.flywheel;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.frontIntake;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.frontIntakeGate;
+import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.leftVelocityPID;
+import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.rightVelocityPID;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.setTargetPoint;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.sideRollers;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.targetFlywheelVelocity;
@@ -19,6 +21,7 @@ import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.turretPitch;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.turretYaw;
 
 import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -29,11 +32,17 @@ import org.firstinspires.ftc.teamcode.base.Components;
 import org.firstinspires.ftc.teamcode.pedroPathing.Pedro;
 import org.firstinspires.ftc.teamcode.robotconfigs.Inferno;
 @TeleOp
+@Config
 public class AlsoShooterTest extends LinearOpMode {
     public double velocityOffset = 0;
+    public static double kP = 0.0014;
+    public static double kI = 0.0012;
+    public static double kD = 0.000067;
     @Override
     public void runOpMode() throws InterruptedException {
         initialize(this, new Inferno(), false,false);
+        leftVelocityPID.setPIDCoefficients(kP,kI,kD);
+        rightVelocityPID.setPIDCoefficients(kP,kI,kD);
         Components.telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         Pedro.createFollower(new Pose(72,72,0));
         waitForStart();
@@ -53,7 +62,7 @@ public class AlsoShooterTest extends LinearOpMode {
                             setTargetPoint();
                             Pose pos = follower.getPose();
                             targetFlywheelVelocity = Inferno.VelRegression.regressFormula(Math.sqrt((targetPoint[0]-pos.getX())*(targetPoint[0]-pos.getX()) + (targetPoint[1]-pos.getY())*(targetPoint[1]-pos.getY()))) + velocityOffset;
-                            turretYaw.call(servo->servo.setTarget((Math.toDegrees(Math.atan2(targetPoint[1] - pos.getY(),targetPoint[0] - pos.getX())) - follower.getHeading())*TURRET_YAW_RATIO+TURRET_YAW_OFFSET));
+                            turretYaw.call(servo->servo.setTarget((Math.toDegrees(Math.atan2(targetPoint[1] - pos.getY(),targetPoint[0] - pos.getX()) - follower.getHeading()))*TURRET_YAW_RATIO+TURRET_YAW_OFFSET));
                         }
                 ),
         Pedro.updatePoseCommand());

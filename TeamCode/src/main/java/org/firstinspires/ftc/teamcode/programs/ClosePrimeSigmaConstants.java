@@ -64,12 +64,12 @@ import java.util.Objects;
 public class ClosePrimeSigmaConstants {
     public static final double INITIAL_WAIT = 0.001;
     public static final double PRE_SHOT_TIME = 0;
-    public static final double SHOT_TIME = 0.5;
+    public static final double SHOT_TIME = 0.3;
     public static final double slowDownT = 0.73;
     public static final double speedUpT = 0.05;
     public static final double stopIntakeT = 0.17;
     public static final double slowDownAmount = 1.0;
-    public static final double gateIntakeTimeout = 0.7;
+    public static final double gateIntakeTimeout = 0.5;
     public static final double secondShootSlowT = 0.75;
     public static final double fourthShootSlowT = 0.75;
     public static final double shootSlowT = 0.8;
@@ -104,10 +104,11 @@ public class ClosePrimeSigmaConstants {
     public static final double[] FINAL_SHOOT = new double[]{65,105,Math.toRadians(180)};
     static {
         poses.put("start",new Pose(19.68, 121.72, Math.toRadians(144)));
-        poses.put("preloadShoot",new Pose(SHOOT[0],SHOOT[1],Math.toRadians(100)));
+        poses.put("preloadShoot",new Pose(SHOOT[0],SHOOT[1],Math.toRadians(144)));
+        poses.put("preloadMotifShoot",new Pose(SHOOT[0],SHOOT[1],Math.toRadians(100)));
         poses.put("shoot",new Pose(SHOOT[0],SHOOT[1],SHOOT[2]));
         poses.put("secondSpikeCtrl",new Pose(41.07, 58.06));
-        poses.put("secondSpike",new Pose(14.829, 58.805));
+        poses.put("secondSpike",new Pose(18.829, 58.805));
         poses.put("gateOpen",new Pose(15.97, 60.02,Math.toRadians(180)));
         poses.put("gateIntake",new Pose(16.47, 55.66,Math.toRadians(130)));
         poses.put("firstSpike",new Pose(22.773, 79.829,Math.toRadians(180)));
@@ -124,6 +125,12 @@ public class ClosePrimeSigmaConstants {
                     .setHeadingInterpolation(HeadingInterpolator.linear(getHeading("start"),getHeading("preloadShoot"),0.5)),
     true),
     shoot);
+    public static Command preloadMotifShoot = new SequentialCommand(new SleepCommand(INITIAL_WAIT),
+            new PedroCommand(b->
+                    b.addPath(new BezierLine(follower::getPose,getPose("preloadMotifShoot")))
+                            .setHeadingInterpolation(HeadingInterpolator.linear(getHeading("start"),getHeading("preloadMotifShoot"),0.5)),
+                    true),
+            shoot);
     public static Command secondSpike = new SequentialCommand(new PedroCommand(
             (PathBuilder b)->b.addPath(
                     new BezierCurve(
@@ -131,7 +138,8 @@ public class ClosePrimeSigmaConstants {
                             getPose("secondSpikeCtrl"),
                             getPose("secondSpike")
                     ))
-                .setHeadingInterpolation(HeadingInterpolator.linear(getHeading("preloadShoot"),getHeading("shoot"),0.3))
+                //.setHeadingInterpolation(HeadingInterpolator.linear(follower.getHeading(),getHeading("shoot"),0.3))
+                .setConstantHeadingInterpolation(getHeading("shoot"))
                 .addParametricCallback(slowDownT,()->follower.setMaxPower(slowDownAmount))
             .addPath(
                     new BezierLine(
@@ -270,6 +278,7 @@ public class ClosePrimeSigmaConstants {
                 telemetry.addLine("X: Third Spike");
                 telemetry.addLine("Y: Gate");
                 telemetry.addLine("LEFT_BUMPER: Preload Shoot");
+                telemetry.addLine("RIGHT_BUMPER: Preload Motif Shoot");
                 telemetry.addLine("BACK: Delete");
                 telemetry.addLine("");
                 for (int i=0;i<pathListDisplay.size();i++){
@@ -286,7 +295,7 @@ public class ClosePrimeSigmaConstants {
         });
         double targetX = (alliance == Inferno.Alliance.RED) ? 141.5 : 2.5;
         executor.setCommands(
-                turretYaw.command(servo->servo.instantSetTargetCommand(Math.toDegrees(atan2(141.5-follower.getPose().getY(), targetX-follower.getPose().getX()))*TURRET_YAW_RATIO+TURRET_YAW_OFFSET)),
+                turretYaw.command(servo->servo.instantSetTargetCommand(Math.toDegrees(atan2(141.5-follower.getPose().getY(), targetX-follower.getPose().getX()) - follower.getHeading())*TURRET_YAW_RATIO+TURRET_YAW_OFFSET)),
                 turretYaw.command(servo->servo.triggeredDynamicOffsetCommand(()->gamepad1.left_trigger>0.2,()->gamepad1.right_trigger>0.2,0.05)),
                 new RunResettingLoop(new PressCommand(
                         new IfThen(()->gamepad1.dpad_up,new InstantCommand(()->{
@@ -314,12 +323,13 @@ public class ClosePrimeSigmaConstants {
                         new IfThen(()->gamepad1.x,new InstantCommand(()->addAction(thirdSpike,"thirdSpike"))),
                         new IfThen(()->gamepad1.y,new InstantCommand(()->addAction(gate,"gate"))),
                         new IfThen(()->gamepad1.left_bumper,new InstantCommand(()->addAction(preloadShoot,"preloadShoot"))),
+                        new IfThen(()->gamepad1.right_bumper,new InstantCommand(()->addAction(preloadMotifShoot,"preloadMotifShoot"))),
                         new IfThen(()->gamepad1.back,new InstantCommand(ClosePrimeSigmaConstants::removeAction))
                 ))
         );
         turretYaw.call(servo->servo.switchControl("setPos"));
         executor.runLoop(opMode::opModeInInit);
-        turretOffsetFromAuto = turretYaw.get("turretYawTop").getOffset();
+        turretOffsetFromAuto = turretYaw.get("turretYawTop").getOffset()+0.5;
         Components.activateActuatorControl();
         executor.setWriteToTelemetry(()->{
             telemetry.addData("Yaw Target", turretYaw.get("turretYawTop").getTarget());

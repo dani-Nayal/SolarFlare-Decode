@@ -92,10 +92,10 @@ public class DecodeTeleOp extends LinearOpMode {
         useVelFeedforward = true;
         initialize(this,new Inferno(),false,true);
         Components.telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
-        if (Objects.isNull(follower)) {Pedro.createFollower(new Pose(72,72,0)); followerMade = true; Inferno.motifDetected = false; turretOffsetFromAuto = 0;}
+        if (Objects.isNull(follower)) {Pedro.createFollower(new Pose(72,24,0)); followerMade = true; Inferno.motifDetected = false; turretOffsetFromAuto = 0;}
         else {Pedro.createFollower(follower.getPose());}
         executor.setCommands(
-                new RunResettingLoop(new InstantCommand(()->{if (gamepad1.back && !followerMade) {follower.setPose(new Pose(72,72,0)); followerMade = true; Inferno.motifDetected = false;  turretOffsetFromAuto = 0;}})),
+                new RunResettingLoop(new InstantCommand(()->{if (gamepad1.back && !followerMade) {follower.setPose(new Pose(72,24,0)); followerMade = true; Inferno.motifDetected = false;  turretOffsetFromAuto = 0;}})),
                 new RunResettingLoop(new InstantCommand(()->{if (gamepad1.dpad_left) {Inferno.alliance = Alliance.BLUE;}})),
                 new RunResettingLoop(new InstantCommand(()->{if (gamepad1.dpad_right) {Inferno.alliance = Alliance.RED;}}))
         );
@@ -120,7 +120,7 @@ public class DecodeTeleOp extends LinearOpMode {
                                 new IfThen(()->gamepad1.right_bumper, setState(RobotState.INTAKE_FRONT)),
                                 new IfThen(()->gamepad1.left_bumper, setState(RobotState.INTAKE_BACK)),
                                 new IfThen(()->gamepad1.right_trigger>0.5, new InstantCommand(()->{transfer.reset(); setState(RobotState.SHOOTING).run();})),
-                                new IfThen(()->gamepad1.left_trigger>0.5, new InstantCommand(()->{stopIntake.reset(); setState(RobotState.STOPPED).run();})),
+                                new IfThen(()->gamepad1.left_trigger>0.5, setState(RobotState.STOPPED)),
                                 new IfThen(()->gamepad1.b, setState(RobotState.INTAKE_FRONT_AND_SHOOT)),
                                 new IfThen(()->gamepad1.x, setState(RobotState.INTAKE_BACK_AND_SHOOT)),
                                 new IfThen(()->gamepad1.a, setState(RobotState.EXPEL))
