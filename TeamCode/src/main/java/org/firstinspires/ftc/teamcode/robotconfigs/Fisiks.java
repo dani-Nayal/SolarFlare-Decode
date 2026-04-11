@@ -385,7 +385,7 @@ public abstract class Fisiks {
 
         yawBrackets[0] = Math.min(bracketOvercorrect, bracketUndercorrect);
         yawBrackets[1] = Math.max(bracketOvercorrect, bracketUndercorrect);
-        if (botVelX*botVelX+botVelY*botVelY<VEL_THRESHOLD) {yawBrackets[0] = baseYaw; yawBrackets[1] = baseYaw;}
+        if (Math.abs(sidewaysNorm[0]*botVelX+sidewaysNorm[1]*botVelY)<VEL_THRESHOLD) {yawBrackets[0] = baseYaw; yawBrackets[1] = baseYaw;}
     }
     public static void pitchTimeGuesses() {
         pitchTimeGuesses[0] = Math.toRadians(45); pitchTimeGuesses[1] = 0.7; pitchTimeGuesses[2] = Math.toRadians(65); pitchTimeGuesses[3] = 1.1;
