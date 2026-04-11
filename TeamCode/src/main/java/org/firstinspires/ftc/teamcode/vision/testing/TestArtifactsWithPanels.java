@@ -19,9 +19,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.teamcode.pedroPathing.Pedro;
 import org.firstinspires.ftc.teamcode.robotconfigs.Inferno;
 import org.firstinspires.ftc.teamcode.vision.Vision;
-import org.firstinspires.ftc.teamcode.vision.descriptors.ArtifactDescriptor;
+import org.firstinspires.ftc.teamcode.vision.Artifact;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @TeleOp
@@ -59,7 +58,7 @@ public class TestArtifactsWithPanels extends OpMode {
 
         vision.drawPoseOnPanels(panelsField, botPose, "blue");
 
-        List<ArtifactDescriptor> artifacts = vision.getGroundArtifacts(vision.getArtifactDescriptors(botPose));
+        List<Artifact> artifacts = vision.getGroundArtifacts(vision.getArtifactDescriptors(botPose));
 
         if (!artifacts.isEmpty()) {
 
@@ -76,7 +75,7 @@ public class TestArtifactsWithPanels extends OpMode {
             panelsField.moveCursor(botPose.getX(), botPose.getY());
             panelsField.line(x2, y2);
 
-            for (ArtifactDescriptor artifact : artifacts) {
+            for (Artifact artifact : artifacts) {
                 double x = artifact.getX();
                 double y = artifact.getY();
                 String className = artifact.getClassName();

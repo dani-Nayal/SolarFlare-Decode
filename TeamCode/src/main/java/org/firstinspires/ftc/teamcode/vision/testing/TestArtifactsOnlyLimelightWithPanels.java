@@ -16,9 +16,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.teamcode.vision.Vision;
-import org.firstinspires.ftc.teamcode.vision.descriptors.ArtifactDescriptor;
+import org.firstinspires.ftc.teamcode.vision.Artifact;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @TeleOp
@@ -39,7 +38,7 @@ public class TestArtifactsOnlyLimelightWithPanels extends OpMode {
     @Override
     public void loop(){
 
-        List<ArtifactDescriptor> artifacts = vision.getGroundArtifacts(vision.getArtifactDescriptors(botPose));
+        List<Artifact> artifacts = vision.getGroundArtifacts(vision.getArtifactDescriptors(botPose));
 
         if (!artifacts.isEmpty()) {
 
@@ -56,7 +55,7 @@ public class TestArtifactsOnlyLimelightWithPanels extends OpMode {
             panelsField.moveCursor(botPose.getX(), botPose.getY());
             panelsField.line(x2, y2);
 
-            for (ArtifactDescriptor artifact : artifacts) {
+            for (Artifact artifact : artifacts) {
                 double x = artifact.getX();
                 double y = artifact.getY();
                 String className = artifact.getClassName();

@@ -1,6 +1,6 @@
-package org.firstinspires.ftc.teamcode.vision.descriptors;
+package org.firstinspires.ftc.teamcode.vision;
 
-public class ArtifactDescriptor {
+public class Artifact {
     double x;
     double y;
     String className;
@@ -10,12 +10,12 @@ public class ArtifactDescriptor {
     double centerYPixels;
     double topCenterXPixels;
     double topCenterYPixels;
-    public ArtifactDescriptor(double x, double y, String className){
+    public Artifact(double x, double y, String className){
         this.x = x;
         this.y = y;
         this.className = className;
     }
-    public ArtifactDescriptor(double x, double y, String className, double centerXPixels, double centerYPixels, double bottomCenterXPixels, double bottomCenterYPixels, double topCenterXPixels, double topCenterYPixels){
+    public Artifact(double x, double y, String className, double centerXPixels, double centerYPixels, double bottomCenterXPixels, double bottomCenterYPixels, double topCenterXPixels, double topCenterYPixels){
         this.x = x;
         this.y = y;
         this.className = className;

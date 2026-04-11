@@ -1,8 +1,5 @@
 package org.firstinspires.ftc.teamcode.vision.testing;
 
-import static org.firstinspires.ftc.teamcode.base.Components.initialize;
-import static org.firstinspires.ftc.teamcode.pedroPathing.Pedro.follower;
-
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.field.FieldManager;
 import com.bylazar.field.PanelsField;
@@ -17,12 +14,10 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
-import org.firstinspires.ftc.teamcode.pedroPathing.Pedro;
 import org.firstinspires.ftc.teamcode.robotconfigs.Inferno;
 import org.firstinspires.ftc.teamcode.vision.Vision;
-import org.firstinspires.ftc.teamcode.vision.descriptors.ArtifactDescriptor;
+import org.firstinspires.ftc.teamcode.vision.Artifact;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @TeleOp
@@ -48,7 +43,7 @@ public class TestMotifWithPanels extends OpMode {
         if (isBlueAlliance) alliance = Inferno.Alliance.BLUE;
         else alliance = Inferno.Alliance.RED;
 
-        List<ArtifactDescriptor> artifacts = vision.getClassifierArtifacts(vision.getArtifactDescriptors(botPose));
+        List<Artifact> artifacts = vision.getClassifierArtifacts(vision.getArtifactDescriptors(botPose));
 
         if (!artifacts.isEmpty()) {
 

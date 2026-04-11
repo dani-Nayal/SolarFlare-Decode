@@ -14,7 +14,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.teamcode.robotconfigs.Inferno;
-import org.firstinspires.ftc.teamcode.vision.descriptors.ArtifactDescriptor;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -71,17 +70,17 @@ public class Vision {
         localizationAprilTags.add(24);
     }
 
-    public List<ArtifactDescriptor> getRelativeArtifactDescriptors(){
+    public List<Artifact> getRelativeArtifactDescriptors(){
         if (!limelight.isRunning()){
             limelight.start();
         }
         limelight.pipelineSwitch(NN_PIPELINE_INDEX);
 
-        List<ArtifactDescriptor> artifactDescriptors = new ArrayList<>(); // Output array
+        List<Artifact> artifacts = new ArrayList<>(); // Output array
         LLResult result = limelight.getLatestResult();
 
         if (result == null || !result.isValid()) {
-            return artifactDescriptors;
+            return artifacts;
         }
 
         for (LLResultTypes.DetectorResult detectorResult : result.getDetectorResults()) {
@@ -122,23 +121,23 @@ public class Vision {
             depth += cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).x;
             horizontal += cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).y;
 
-            ArtifactDescriptor artifact = new ArtifactDescriptor(horizontal, depth, className);
+            Artifact artifact = new Artifact(horizontal, depth, className);
             artifact.setBottomCenterXPixels(targetX);
             artifact.setBottomCenterYPixels(targetY);
-            artifactDescriptors.add(artifact);
+            artifacts.add(artifact);
 
         }
-        return artifactDescriptors;
+        return artifacts;
     }
 
-    public List<ArtifactDescriptor> getArtifactDescriptors(Pose botPosePedro){
+    public List<Artifact> getArtifactDescriptors(Pose botPosePedro){
         if (!limelight.isRunning()) limelight.start();
         if (limelight.getStatus().getPipelineIndex() != NN_PIPELINE_INDEX) limelight.pipelineSwitch(NN_PIPELINE_INDEX);
 
-        List<ArtifactDescriptor> artifactDescriptors = new ArrayList<>(); // Output array
+        List<Artifact> artifacts = new ArrayList<>(); // Output array
         LLResult result = limelight.getLatestResult();
 
-        if (result == null || !result.isValid()) return artifactDescriptors;
+        if (result == null || !result.isValid()) return artifacts;
 
         for (LLResultTypes.DetectorResult detectorResult : result.getDetectorResults()) {
             String className = detectorResult.getClassName();
@@ -174,12 +173,12 @@ public class Vision {
 
             double artifactY = y + depth * sin + (-horizontal) * cos;
 
-            ArtifactDescriptor artifact = new ArtifactDescriptor(artifactX, artifactY, className, detectorResult.getTargetXPixels(), detectorResult.getTargetYPixels(), targetX, targetY, getTopCenterXPixels(cameraOrientation, corners), getTopCenterYPixels(cameraOrientation, corners));
+            Artifact artifact = new Artifact(artifactX, artifactY, className, detectorResult.getTargetXPixels(), detectorResult.getTargetYPixels(), targetX, targetY, getTopCenterXPixels(cameraOrientation, corners), getTopCenterYPixels(cameraOrientation, corners));
 
-            artifactDescriptors.add(artifact);
+            artifacts.add(artifact);
 
         }
-        return artifactDescriptors;
+        return artifacts;
     }
 
     public Pose getBotPoseMT1(Pose odometryPose){
@@ -363,19 +362,19 @@ public class Vision {
         return yawTransformed;
     }
 
-    public List<ArtifactDescriptor> pedroToStandardPoseArtifacts(List<ArtifactDescriptor> artifacts){
+    public List<Artifact> pedroToStandardPoseArtifacts(List<Artifact> artifacts){
         if (artifacts.isEmpty()) return artifacts;
 
-        List<ArtifactDescriptor> out = new ArrayList<>();
-        for (ArtifactDescriptor artifactDescriptor : artifacts){
-            double x = artifactDescriptor.getX();
-            double y = artifactDescriptor.getY();
-            String className = artifactDescriptor.getClassName();
+        List<Artifact> out = new ArrayList<>();
+        for (Artifact artifact : artifacts){
+            double x = artifact.getX();
+            double y = artifact.getY();
+            String className = artifact.getClassName();
 
             double xTransformed = 72 - y;
             double yTransformed = x - 72;
 
-            out.add(new ArtifactDescriptor(xTransformed, yTransformed, className));
+            out.add(new Artifact(xTransformed, yTransformed, className));
         }
         return out;
     }
@@ -405,7 +404,7 @@ public class Vision {
         return null;
     }
 
-    public Double intakingAngleArtifacts(List<ArtifactDescriptor> artifacts, Pose botPose, int stepDeg) {
+    public Double intakingAngleArtifacts(List<Artifact> artifacts, Pose botPose, int stepDeg) {
         if (artifacts.isEmpty()) return null;
 
         double bestAngle = -1;
@@ -428,32 +427,32 @@ public class Vision {
             double sin = Math.sin(theta);
 
             int count = 0;
-            double totalPerpDist = 0;
+            double totalPerpendicularDist = 0;
             double totalDist = 0;
 
-            for (ArtifactDescriptor artifact : artifacts) {
+            for (Artifact artifact : artifacts) {
                 double rx = artifact.getX() - botPose.getX();
                 double ry = artifact.getY() - botPose.getY();
 
-                double perpDist = Math.abs(rx * sin - ry * cos);
+                double perpendicularDist = Math.abs(rx * sin - ry * cos);
                 double distance = Math.hypot(rx, ry);
 
-                if (perpDist < INTAKING_WIDTH_INCHES / 2) {
+                if (perpendicularDist < INTAKING_WIDTH_INCHES / 2) {
                     count++;
-                    totalPerpDist += perpDist;
+                    totalPerpendicularDist += perpendicularDist;
                     totalDist += distance;
                 }
             }
 
             if (count > 0) {
-                double avgPerpDist = totalPerpDist / count;
+                double avgPerpendicularDist = totalPerpendicularDist / count;
                 double avgDist = totalDist / count;
 
                 double normCount = count / (double) artifacts.size();
-                double normPerp = avgPerpDist / (INTAKING_WIDTH_INCHES / 2);
+                double normPerpendicular = avgPerpendicularDist / (INTAKING_WIDTH_INCHES / 2);
                 double normDist = avgDist / MAX_RELEVANT_DISTANCE;
 
-                double score = w1 * normCount - w2 * normPerp - w3 * normDist;
+                double score = w1 * normCount - w2 * normPerpendicular - w3 * normDist;
 
                 if (score > bestScore) {
                     bestScore = score;
@@ -592,16 +591,16 @@ public class Vision {
         return targetYPixels;
     }
 
-    public boolean artifactsEvenlySpaced(List<ArtifactDescriptor> artifacts, double distTolerance){
+    public boolean artifactsEvenlySpaced(List<Artifact> artifacts, double distTolerance){
         if (artifacts.size() < 3) return true;
 
-        artifacts.sort(Comparator.comparing(ArtifactDescriptor::getTopCenterXPixels));
+        artifacts.sort(Comparator.comparing(Artifact::getTopCenterXPixels));
 
         List<Double> distances = new ArrayList<>();
 
         for (int i = 1; i < artifacts.size(); i++){
-            ArtifactDescriptor artifact1 = artifacts.get(i - 1);
-            ArtifactDescriptor artifact2 = artifacts.get(i);
+            Artifact artifact1 = artifacts.get(i - 1);
+            Artifact artifact2 = artifacts.get(i);
 
             double distance = Math.sqrt(Math.pow(artifact1.getCenterXPixels() - artifact2.getCenterXPixels(), 2) + Math.pow(artifact1.getCenterYPixels() - artifact2.getCenterYPixels(), 2));
             distances.add(distance);
@@ -615,7 +614,7 @@ public class Vision {
         return true;
     }
 
-    public double getAngleToArtifactDegrees(ArtifactDescriptor firstArtifact, ArtifactDescriptor secondArtifact){
+    public double getAngleToArtifactDegrees(Artifact firstArtifact, Artifact secondArtifact){
         double x1 = firstArtifact.getTopCenterXPixels();
         double y1 = firstArtifact.getTopCenterYPixels();
         double x2 = secondArtifact.getTopCenterXPixels();
@@ -645,23 +644,54 @@ public class Vision {
         return numerator / denominator;
     }
 
-    public List<ArtifactDescriptor> getClassifierArtifacts(List<ArtifactDescriptor> artifacts){
+    public boolean artifactsInLine(List<Artifact> artifacts, double lineDistTolerance){
+        if (artifacts.size() < 3) return true;
+
+        List<Artifact> bestArtifacts = new ArrayList<>();
+
+        for (int i = 0; i < artifacts.size(); i++) {
+            for (int j = i + 1; j < artifacts.size(); j++) {
+                Artifact artifact1 = artifacts.get(i);
+                Artifact artifact2 = artifacts.get(j);
+
+                List<Artifact> collinearArtifacts = new ArrayList<>();
+
+                for (Artifact artifact : artifacts) {
+                    double dist = pointToLineDistance(artifact1.getTopCenterXPixels(), artifact1.getTopCenterYPixels(), artifact2.getTopCenterXPixels(), artifact2.getTopCenterYPixels(), artifact.getTopCenterXPixels(), artifact.getTopCenterYPixels());
+
+                    if (dist < lineDistTolerance) {
+                        collinearArtifacts.add(artifact);
+                    }
+                }
+
+                if (collinearArtifacts.isEmpty()) continue;
+
+                if (collinearArtifacts.size() > bestArtifacts.size()) {
+                    bestArtifacts = collinearArtifacts;
+                }
+            }
+        }
+        return (bestArtifacts.size() > 3);
+    }
+
+
+    public List<Artifact> getClassifierArtifacts(List<Artifact> artifacts){
         if (artifacts.isEmpty()) return artifacts;
 
         double lineDistTolerance = 30;
         double distTolerance = 30;
 
-        List<ArtifactDescriptor> bestArtifacts = new ArrayList<>();
+        List<Artifact> bestArtifacts = new ArrayList<>();
         double bestAverageY = Double.POSITIVE_INFINITY;
 
         for (int i = 0; i < artifacts.size(); i++){
             for (int j = i + 1; j < artifacts.size(); j++) {
-                ArtifactDescriptor artifact1 = artifacts.get(i);
-                ArtifactDescriptor artifact2 = artifacts.get(j);
+                Artifact artifact1 = artifacts.get(i);
+                Artifact artifact2 = artifacts.get(j);
 
-                List<ArtifactDescriptor> collinearArtifacts = new ArrayList<>();
+                List<Artifact> collinearArtifacts = new ArrayList<>();
 
-                for (ArtifactDescriptor artifact : artifacts) {
+                for (Artifact artifact : artifacts) {
                     double dist = pointToLineDistance(artifact1.getTopCenterXPixels(), artifact1.getTopCenterYPixels(), artifact2.getTopCenterXPixels(), artifact2.getTopCenterYPixels(), artifact.getTopCenterXPixels(), artifact.getTopCenterYPixels());
 
                     if (dist < lineDistTolerance){
@@ -673,7 +703,7 @@ public class Vision {
 
                 double sumY = 0;
 
-                for (ArtifactDescriptor artifact : collinearArtifacts){
+                for (Artifact artifact : collinearArtifacts){
                     sumY += artifact.getCenterYPixels();
                 }
 
@@ -689,10 +719,38 @@ public class Vision {
         return bestArtifacts;
     }
 
-    public List<ArtifactDescriptor> getGroundArtifacts(List<ArtifactDescriptor> artifacts){
+    public List<Artifact> getClassifierArtifacts2(List<Artifact> artifacts){
+        if (artifacts.isEmpty()) return null;
+
+        List<Artifact> classifierArtifacts = new ArrayList<>();
+
+        double yMax = Double.NEGATIVE_INFINITY;
+        double yMin = Double.POSITIVE_INFINITY;
+
+        if (!artifactsEvenlySpaced(artifacts, 30)) {
+            for (Artifact artifact : artifacts) {
+                double y = artifact.getTopCenterYPixels();
+
+                if (y > yMax) yMax = y;
+                else if (y < yMin) yMin = y;
+            }
+            double midY = (yMax + yMin) / 2;
+
+            for (Artifact artifact : artifacts) {
+                double y = artifact.getTopCenterYPixels();
+                if (y < midY) classifierArtifacts.add(artifact);
+            }
+            return classifierArtifacts;
+        }
+        else if (artifactsInLine(artifacts, 30)) return artifacts;
+        else return new ArrayList<>();
+    }
+
+
+    public List<Artifact> getGroundArtifacts(List<Artifact> artifacts){
         if (artifacts.isEmpty()) return artifacts;
 
-        List<ArtifactDescriptor> classifierArtifacts = getClassifierArtifacts(artifacts);
+        List<Artifact> classifierArtifacts = getClassifierArtifacts(artifacts);
 
         artifacts.removeAll(classifierArtifacts);
 
@@ -700,19 +758,19 @@ public class Vision {
 
     }
 
-    public double getNumArtifactsInClassifier(List<ArtifactDescriptor> classifierArtifacts){
+    public double getNumArtifactsInClassifier(List<Artifact> classifierArtifacts){
         return classifierArtifacts.size();
     }
 
-    public List<String> getClassifierArtifactColors(List<ArtifactDescriptor> classifierArtifacts, Inferno.Alliance alliance){
+    public List<String> getClassifierArtifactColors(List<Artifact> classifierArtifacts, Inferno.Alliance alliance){
         if (classifierArtifacts.isEmpty() || alliance == null) return new ArrayList<>();
 
         List<String> colors = new ArrayList<>();
 
-        if (alliance == Inferno.Alliance.BLUE) classifierArtifacts.sort(Comparator.comparing(ArtifactDescriptor::getTopCenterXPixels));
-        else if (alliance == Inferno.Alliance.RED) classifierArtifacts.sort(Comparator.comparing(ArtifactDescriptor::getTopCenterXPixels).reversed());
+        if (alliance == Inferno.Alliance.BLUE) classifierArtifacts.sort(Comparator.comparing(Artifact::getTopCenterXPixels));
+        else if (alliance == Inferno.Alliance.RED) classifierArtifacts.sort(Comparator.comparing(Artifact::getTopCenterXPixels).reversed());
 
-        for (ArtifactDescriptor artifact : classifierArtifacts){
+        for (Artifact artifact : classifierArtifacts){
             colors.add(artifact.getClassName());
         }
 
