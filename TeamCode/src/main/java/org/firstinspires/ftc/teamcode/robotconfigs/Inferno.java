@@ -430,7 +430,7 @@ public class Inferno implements RobotConfig{
         }
         else {
             FisiksCache.clearCache(); physicsTime = 0;
-            Fisiks.buildPhysics(currentBallPath, targetPoint, pos, follower.getVelocity(), flywheel.get("flywheelLeft").getVelocity()); Fisiks.pitchTimeGuesses();
+            Fisiks.buildPhysics(currentBallPath, targetPoint, pos, follower.getVelocity(),targetFlywheelVelocity); Fisiks.pitchTimeGuesses();
             if (currentBallPath==BallPath.LOW){
                 Fisiks.yawGuesses(Fisiks.pitchTimeGuesses[0],Fisiks.pitchTimeGuesses[1]);
                 turret[0] = Math.toDegrees(pitchTimeGuesses[0]);
