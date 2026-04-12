@@ -32,6 +32,8 @@ public class Vision {
     public final double cyNN = cy / 4;
     public final int NN_PIPELINE_INDEX = 0;
     public final int APRIL_TAGS_PIPELINE_INDEX = 1;
+    public final int CLASSIFIER_RED_PIPELINE_INDEX = 3;
+    public final int CLASSIFIER_BLUE_PIPELINE_INDEX = 4;
     public final double HORIZONTAL_FOV = 54.4;
     public Pose3D cameraPoseOnRobot = new Pose3D(new Position(DistanceUnit.METER, 0.182, 0, 0.2225, 0), new YawPitchRollAngles(AngleUnit.DEGREES, 0, 0, 0, 0));
     public Limelight3A limelight;
