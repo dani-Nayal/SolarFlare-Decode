@@ -1,12 +1,9 @@
 package org.firstinspires.ftc.teamcode.vision;
 
-import java.util.List;
-
 public class Artifact {
     double x;
     double y;
     String className;
-    List<List<Double>> corners;
     double bottomCenterXPixels;
     double bottomCenterYPixels;
     double centerXPixels;
@@ -18,12 +15,16 @@ public class Artifact {
         this.y = y;
         this.className = className;
     }
-    public Artifact(double x, double y, String className, List<List<Double>> corners){
+    public Artifact(double x, double y, String className, double centerXPixels, double centerYPixels, double bottomCenterXPixels, double bottomCenterYPixels, double topCenterXPixels, double topCenterYPixels){
         this.x = x;
         this.y = y;
         this.className = className;
-        this.corners = corners;
-
+        this.centerXPixels = centerXPixels;
+        this.centerYPixels = centerYPixels;
+        this.bottomCenterXPixels = bottomCenterXPixels;
+        this.bottomCenterYPixels = bottomCenterYPixels;
+        this.topCenterXPixels = topCenterXPixels;
+        this.topCenterYPixels = topCenterYPixels;
     }
     public double getX() {return x;}
     public void setX(double x) {this.x = x;}
@@ -31,63 +32,16 @@ public class Artifact {
     public void setY(double y) {this.y = y;}
     public String getClassName() {return className;}
     public void setClassName(String className) {this.className = className;}
-    public Double getTopCenterXPixels(Vision.CAMERA_ORIENTATION orientation) {
-        double topCenterX = 0;
-
-        List<Double> corner0 = corners.get(0);
-        List<Double> corner1 = corners.get(1);
-        List<Double> corner2 = corners.get(2);
-        List<Double> corner3 = corners.get(3);
-
-        if (orientation == Vision.CAMERA_ORIENTATION.NORMAL){
-            topCenterX = (corner1.get(0) + corner0.get(0)) / 2;
-        }
-        else if (orientation == Vision.CAMERA_ORIENTATION.UPSIDE_DOWN){
-            topCenterX = (corner2.get(0) + corner3.get(0)) / 2;
-        }
-        else if (orientation == Vision.CAMERA_ORIENTATION.CLOCKWISE_90){
-            topCenterX = (corner0.get(0) + corner3.get(0)) / 2;
-        }
-        else if (orientation == Vision.CAMERA_ORIENTATION.COUNTER_CLOCKWISE_90){
-            topCenterX = (corner2.get(0) + corner1.get(0)) / 2;
-        }
-
-        this.topCenterXPixels = topCenterX;
-
-        return topCenterX;
-    }
-    public void setTopCenterXPixels(double topCenterXPixels){
-        this.topCenterXPixels = topCenterXPixels;
-    }
-    public Double getTopCenterYPixels(Vision.CAMERA_ORIENTATION orientation) {
-        double topCenterY = 0;
-
-        List<Double> corner0 = corners.get(0);
-        List<Double> corner1 = corners.get(1);
-        List<Double> corner2 = corners.get(2);
-        List<Double> corner3 = corners.get(3);
-
-        if (orientation == Vision.CAMERA_ORIENTATION.NORMAL){
-            topCenterY = corner1.get(1);
-        }
-        else if (orientation == Vision.CAMERA_ORIENTATION.UPSIDE_DOWN){
-            topCenterY = corner3.get(1);
-        }
-        else if (orientation == Vision.CAMERA_ORIENTATION.CLOCKWISE_90){
-            topCenterY = corner0.get(1);
-        }
-        else if (orientation == Vision.CAMERA_ORIENTATION.COUNTER_CLOCKWISE_90){
-            topCenterY = corner2.get(1);
-        }
-
-        this.topCenterYPixels = topCenterY;
-
-        return topCenterY;
-    }
-    public void setTopCenterYPixels(double topCenterYPixels){
-        this.topCenterYPixels = topCenterYPixels;
-    }
-
+    public double getBottomCenterXPixels() {return bottomCenterXPixels;}
+    public double getBottomCenterYPixels() {return bottomCenterYPixels;}
+    public void setBottomCenterXPixels(double bottomCenterXPixels) {this.bottomCenterXPixels = bottomCenterXPixels;}
+    public void setBottomCenterYPixels(double bottomCenterYPixels) {this.bottomCenterYPixels = bottomCenterYPixels;}
+    public double getCenterXPixels() {return centerXPixels;}
+    public void setCenterXPixels(double centerXPixels) {this.centerXPixels = centerXPixels;}
+    public double getCenterYPixels() {return centerYPixels;}
+    public void setCenterYPixels(double centerYPixels) {this.centerYPixels = centerYPixels;}
+    public double getTopCenterYPixels() {return topCenterYPixels;}
+    public void setTopCenterYPixels(double topCenterYPixels) {this.topCenterYPixels = topCenterYPixels;}
+    public double getTopCenterXPixels() {return topCenterXPixels;}
+    public void setTopCenterXPixels(double topCenterXPixels) {this.topCenterXPixels = topCenterXPixels;}
 }
-
-
