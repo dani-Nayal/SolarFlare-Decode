@@ -174,7 +174,9 @@ public class ClosePrimeSigmaConstants {
                                             follower::getPose,
                                             getPose("shoot")
                                     )
-                            ).setHeadingInterpolation(HeadingInterpolator.linear(getHeading("gateIntake"), getHeading("shoot"),0.6))
+                            )
+                            //.setHeadingInterpolation(HeadingInterpolator.linear(getHeading("gateIntake"), getHeading("shoot"),0.6))
+                            .setConstantHeadingInterpolation(getHeading("shoot"))
                             .addParametricCallback(stopIntakeT,()->setState(Inferno.RobotState.STOPPED).run())
                             .addParametricCallback(shootSlowT,()->follower.setMaxPower(shootSlowAmount))
                             .addParametricCallback(0.93,()->follower.setMaxPower(1.0)),

@@ -92,7 +92,7 @@ public class Inferno implements RobotConfig{
     public static double hoodDesired;
     public static double yawDesired;
     public static double physicsTime;
-    public static RobotState prevState = null;
+    public static RobotState prevIntake = RobotState.INTAKE_FRONT;
     public static boolean motifDetected = false;
     public static double turretOffsetFromAuto;
     public static boolean useVelFeedforward = true;
@@ -204,7 +204,7 @@ public class Inferno implements RobotConfig{
         AUTO,
         TELEOP
     }
-    private static final SequentialCommand frontTransfer  = new SequentialCommand(
+    private static final SequentialCommand frontTransfer = new SequentialCommand(
             sideRollers.command(servo->servo.setPowerCommand(1.0)),
             new ParallelCommand(
                     transferGate.instantSetTargetCommand("open"),
@@ -256,7 +256,20 @@ public class Inferno implements RobotConfig{
             new SleepCommand(0.7),
             setState(null)
     );
+    public static final SequentialCommand midTransfer = new SequentialCommand(
+            sideRollers.command(servo->servo.setPowerCommand(1.0)),
+            new ParallelCommand(
+                    transferGate.instantSetTargetCommand("open"),
+                    frontIntake.setPowerCommand("transfer"),
+                    backIntake.setPowerCommand("transfer"),
+                    frontIntakeGate.instantSetTargetCommand("closed"),
+                    backIntakeGate.instantSetTargetCommand("closed")
+            ),
+            new SleepCommand(0.7),
+            setState(null)
+    );
     public static final Command frontIntakeAction = new SequentialCommand(
+            new InstantCommand(()->prevIntake = RobotState.INTAKE_FRONT),
             sideRollers.command(servo->servo.setPowerCommand(0.0)),
             new ParallelCommand(
                     transferGate.instantSetTargetCommand("closed"),
@@ -283,31 +296,32 @@ public class Inferno implements RobotConfig{
             )
     );
     public static final Command backIntakeAction = new SequentialCommand(
-                sideRollers.command(servo->servo.setPowerCommand(0.0)),
-                new ParallelCommand(
-                        transferGate.instantSetTargetCommand("closed"),
-                        backIntakeGate.instantSetTargetCommand("open"),
-                        frontIntakeGate.instantSetTargetCommand("closed"),
-                        frontIntake.setPowerCommand("stopped"),
-                        backIntake.setPowerCommand("stopped")
-                ),
-                new SleepCommand(0.2),
-                new ParallelCommand(
-                        backIntake.setPowerCommand("intake"),
-                        frontIntake.setPowerCommand("otherSideIntake"),
-                        new SequentialCommand(
-                                new SleepCommand(0.5),
-                                new ParallelCommand(
-                                        new CheckFull(),
-                                        new SequentialCommand(
-                                                new CheckBallPresent(0),
-                                                frontIntake.setPowerCommand("stopped")
-                                        )
-                                ),
-                                setState(RobotState.STOPPED)
-                        )
-                )
-        );
+            new InstantCommand(()->prevIntake = RobotState.INTAKE_BACK),
+            sideRollers.command(servo->servo.setPowerCommand(0.0)),
+            new ParallelCommand(
+                    transferGate.instantSetTargetCommand("closed"),
+                    backIntakeGate.instantSetTargetCommand("open"),
+                    frontIntakeGate.instantSetTargetCommand("closed"),
+                    frontIntake.setPowerCommand("stopped"),
+                    backIntake.setPowerCommand("stopped")
+            ),
+            new SleepCommand(0.2),
+            new ParallelCommand(
+                    backIntake.setPowerCommand("intake"),
+                    frontIntake.setPowerCommand("otherSideIntake"),
+                    new SequentialCommand(
+                            new SleepCommand(0.5),
+                            new ParallelCommand(
+                                    new CheckFull(),
+                                    new SequentialCommand(
+                                            new CheckBallPresent(0),
+                                            frontIntake.setPowerCommand("stopped")
+                                    )
+                            ),
+                            setState(RobotState.STOPPED)
+                    )
+            )
+    );
     public static final Command stopIntake = new ParallelCommand(
         new SequentialCommand(
             new InstantCommand(Inferno::readBallStorage),
@@ -315,7 +329,7 @@ public class Inferno implements RobotConfig{
             sideRollers.command(servo->servo.setPowerCommand(1.0)),
             new ConditionalCommand(
                     new IfThen(
-                            ()->prevState==RobotState.INTAKE_BACK,
+                            ()->prevIntake==RobotState.INTAKE_BACK,
                             new ParallelCommand(
                                     frontIntakeGate.instantSetTargetCommand("closed"),
                                     backIntakeGate.instantSetTargetCommand("closed"),
@@ -324,20 +338,11 @@ public class Inferno implements RobotConfig{
                             )
                     ),
                     new IfThen(
-                            ()->prevState==RobotState.INTAKE_FRONT,
+                            ()->prevIntake==RobotState.INTAKE_FRONT,
                             new ParallelCommand(
                                     frontIntakeGate.instantSetTargetCommand("closed"),
                                     backIntakeGate.instantSetTargetCommand("closed"),
                                     frontIntake.setPowerCommand("otherFrontDrive"),
-                                    backIntake.setPowerCommand("frontDrive")
-                            )
-                    ),
-                    new IfThen(
-                            ()->true,
-                            new ParallelCommand(
-                                    frontIntakeGate.instantSetTargetCommand("closed"),
-                                    backIntakeGate.instantSetTargetCommand("closed"),
-                                    frontIntake.setPowerCommand("frontDrive"),
                                     backIntake.setPowerCommand("frontDrive")
                             )
                     )
@@ -393,8 +398,9 @@ public class Inferno implements RobotConfig{
                     new IfThen(
                             () -> shotType == ShotType.NORMAL,
                             new ConditionalCommand(
-                                    new IfThen(()->Objects.nonNull(ballStorage[2]),backTransfer),
-                                    new IfThen(()->true,frontTransfer)
+                                    new IfThen(()->Objects.nonNull(ballStorage[0]) && Objects.nonNull(ballStorage[2]) && prevIntake==RobotState.INTAKE_BACK, backTransfer),
+                                    new IfThen(()->Objects.nonNull(ballStorage[0]) && Objects.nonNull(ballStorage[2]) && prevIntake==RobotState.INTAKE_FRONT, frontTransfer),
+                                    new IfThen(()->true, midTransfer)
                             )
                     ),
                     new IfThen(
@@ -630,7 +636,7 @@ public class Inferno implements RobotConfig{
             }
     );
     public static Command setState(RobotState robotState){
-        return new InstantCommand(()->{prevState = Inferno.robotState; Inferno.robotState=robotState;});
+        return new InstantCommand(()->Inferno.robotState=robotState);
     }
     public static Command setShotType(ShotType shotType){
         return new InstantCommand(()->Inferno.shotType=shotType);
