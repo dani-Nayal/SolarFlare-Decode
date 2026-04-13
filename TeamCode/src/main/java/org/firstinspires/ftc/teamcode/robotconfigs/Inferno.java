@@ -414,7 +414,7 @@ public class Inferno implements RobotConfig{
         setTargetPoint();
         Pose pos = follower.getPose();
         targetFlywheelVelocity = VelRegression.regressFormula(Math.sqrt((targetPoint[0]-pos.getX())*(targetPoint[0]-pos.getX()) + (targetPoint[1]-pos.getY())*(targetPoint[1]-pos.getY())));
-        targetFlywheelVelocity = Math.min(Math.max(targetFlywheelVelocity,800*33.0/23),1500*33.0/23);
+        //targetFlywheelVelocity = Math.min(Math.max(targetFlywheelVelocity,800*33.0/23),1500*33.0/23);
         if (robotState == RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT) {
             double startTime = timer.time();
             /*

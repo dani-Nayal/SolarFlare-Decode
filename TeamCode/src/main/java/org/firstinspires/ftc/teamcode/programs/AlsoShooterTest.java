@@ -68,10 +68,11 @@ public class AlsoShooterTest extends LinearOpMode {
         Pedro.updatePoseCommand());
         executor.setWriteToTelemetry(
                 ()->{
+                    Components.telemetry.addData("Distance",follower.getPose().distanceFrom(new Pose(targetPoint[0],targetPoint[1])));
+                    Components.telemetry.addData("Target Velocity (Including Offset)",targetFlywheelVelocity);
+                    Components.telemetry.addData("Velocity Offset",velocityOffset);
                     Components.telemetry.addData("Hood Target",turretPitch.get("turretPitchLeft").getTarget());
                     Components.telemetry.addData("Flywheel Error",targetFlywheelVelocity-flywheel.get("flywheelLeft").getVelocity());
-                    Components.telemetry.addData("Target Velocity",targetFlywheelVelocity);
-                    Components.telemetry.addData("Velocity Offset",velocityOffset);
                 }
         );
         executor.runLoop(this::opModeIsActive);
