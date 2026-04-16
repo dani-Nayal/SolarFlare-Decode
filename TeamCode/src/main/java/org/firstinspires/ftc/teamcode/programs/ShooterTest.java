@@ -25,12 +25,21 @@ public class ShooterTest extends LinearOpMode {
         executor.setCommands(
                 turretPitch.command((Components.BotServo servo)->servo.triggeredDynamicTargetCommand(()->gamepad1.right_bumper,()->gamepad1.left_bumper,0.1)),
                 Commands.triggeredDynamicCommand(()->gamepad1.right_trigger>0.3,()->gamepad1.left_trigger>0.3,new Commands.InstantCommand(()->targetYaw+=0.12),new Commands.InstantCommand(()->targetYaw-=0.12)),
+                Commands.triggeredDynamicCommand(()->gamepad1.right_bumper,()->gamepad1.left_bumper,new Commands.InstantCommand(()->targetYaw+=0.005),new Commands.InstantCommand(()->targetYaw-=0.005)),
+                new Commands.RunResettingLoop(new Commands.PressCommand(
+                        new Commands.IfThen(()->gamepad1.x,
+                                new Commands.SequentialCommand(
+                                        new Commands.InstantCommand(()->targetYaw = 180),
+                                        new Commands.SleepCommand(0.5),
+                                        new Commands.InstantCommand(()->targetYaw = -110)
+                                )
+                        )
+                )),
                 new Commands.RunResettingLoop(new Commands.InstantCommand(()->turretYaw.call(servo->servo.setTarget(targetYaw*TURRET_YAW_RATIO+TURRET_YAW_OFFSET))))
         );
         executor.setWriteToTelemetry(()->{
             telemetry.addData("hood",turretPitch.get("turretPitchLeft").getTarget());
-            telemetry.addData("yaw top target",turretYaw.get("turretYawTop").getTarget());
-            telemetry.addData("yaw bottom target",turretYaw.get("turretYawBottom").getTarget());
+            telemetry.addData("yaw target",turretYaw.get("turretYawTop").getTargetMinusOffset());
             telemetry.addData("yaw angle",targetYaw);
         });
         waitForStart();

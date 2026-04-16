@@ -626,6 +626,7 @@ public abstract class Components {
                 this.getDevice().setDirection(direction);
             }
             this.setTarget(0);
+            setPower(0);
         }
         public void setPowerBounds(Supplier<Double> maxPowerFunc, Supplier<Double> minPowerFunc){
             this.maxPowerFunc=maxPowerFunc;

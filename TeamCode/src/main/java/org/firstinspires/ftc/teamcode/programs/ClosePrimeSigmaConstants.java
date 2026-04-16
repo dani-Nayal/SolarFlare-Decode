@@ -10,6 +10,7 @@ import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_PITCH_O
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_PITCH_RATIO;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_YAW_OFFSET;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_YAW_RATIO;
+import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.YAW_FIGHT;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.alliance;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.ballStorage;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.classifierBallCount;
@@ -103,15 +104,14 @@ public class ClosePrimeSigmaConstants {
     public static final double[] SHOOT = new double[]{59.85,79.42,Math.toRadians(180)};
     public static final double[] FINAL_SHOOT = new double[]{65,105,Math.toRadians(180)};
     static {
-        poses.put("start",new Pose(19.68, 121.72, Math.toRadians(144)));
+        poses.put("start",new Pose(20.29, 121.28, Math.toRadians(144)));
         poses.put("preloadShoot",new Pose(SHOOT[0],SHOOT[1],Math.toRadians(144)));
         poses.put("preloadMotifShoot",new Pose(SHOOT[0],SHOOT[1],Math.toRadians(100)));
         poses.put("shoot",new Pose(SHOOT[0],SHOOT[1],SHOOT[2]));
         poses.put("secondSpikeCtrl",new Pose(41.07, 58.06));
         poses.put("secondSpike",new Pose(18.829, 58.805));
-        poses.put("gateOpen",new Pose(15.97, 60.02,Math.toRadians(180)));
-        poses.put("gateIntake",new Pose(16.47, 55.66,Math.toRadians(130)));
-        poses.put("firstSpike",new Pose(22.773, 79.829,Math.toRadians(180)));
+        poses.put("gateOpen",new Pose(14, 58,Math.toRadians(160)));
+        poses.put("firstSpike",new Pose(22.773, 77.829,Math.toRadians(180)));
         poses.put("thirdSpikeCtrl",new Pose(80.067, 27.483));
         poses.put("thirdSpike",new Pose(13.504, 41.131,Math.toRadians(180)));
         poses.put("thirdShootCtrl",new Pose(44.169, 52.575));
@@ -157,16 +157,8 @@ public class ClosePrimeSigmaConstants {
                             follower::getPose,
                             getPose("gateOpen")
                     )
-                    ).setConstantHeadingInterpolation(getHeading("gateOpen"))
-                    .addPath(
-                            new BezierLine(
-                                    follower::getPose,
-                                    getPose("gateIntake")
-                            )
-                    )
-                    .setHeadingInterpolation(HeadingInterpolator.linear(getHeading("gateOpen"),getHeading("gateIntake"),0.5))
-                    .addParametricCallback(0.15,setState(Inferno.RobotState.INTAKE_FRONT)::run),
-            true).setTimeout(2.5),
+                    ).setConstantHeadingInterpolation(getHeading("gateOpen")),
+            true).setTimeout(2),
             new Inferno.CheckFull(gateIntakeTimeout),
             new PedroCommand(
                     (PathBuilder b)->b.addPath(
@@ -175,8 +167,7 @@ public class ClosePrimeSigmaConstants {
                                             getPose("shoot")
                                     )
                             )
-                            //.setHeadingInterpolation(HeadingInterpolator.linear(getHeading("gateIntake"), getHeading("shoot"),0.6))
-                            .setConstantHeadingInterpolation(getHeading("shoot"))
+                            .setHeadingInterpolation(HeadingInterpolator.linear(getHeading("gateIntake"), getHeading("shoot"),0.2))
                             .addParametricCallback(stopIntakeT,()->setState(Inferno.RobotState.STOPPED).run())
                             .addParametricCallback(shootSlowT,()->follower.setMaxPower(shootSlowAmount))
                             .addParametricCallback(0.93,()->follower.setMaxPower(1.0)),
@@ -331,7 +322,7 @@ public class ClosePrimeSigmaConstants {
         );
         turretYaw.call(servo->servo.switchControl("setPos"));
         executor.runLoop(opMode::opModeInInit);
-        turretOffsetFromAuto = turretYaw.get("turretYawTop").getOffset()+0.5;
+        turretOffsetFromAuto = turretYaw.get("turretYawTop").getOffset() + YAW_FIGHT;
         Components.activateActuatorControl();
         executor.setWriteToTelemetry(()->{
             telemetry.addData("Yaw Target", turretYaw.get("turretYawTop").getTarget());

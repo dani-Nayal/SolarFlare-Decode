@@ -56,7 +56,7 @@ public class AlsoShooterTest extends LinearOpMode {
         backIntakeGate.setPosition(133);
         transferGate.setPosition(148.5);
         executor.setCommands(turretPitch.command(servo->servo.triggeredDynamicTargetCommand(()->gamepad1.right_bumper,()->gamepad1.left_bumper,0.1)),
-                Commands.triggeredDynamicCommand(()->gamepad1.dpad_left,()->gamepad1.dpad_right,new Commands.InstantCommand(()->velocityOffset+=2),new Commands.InstantCommand(()->velocityOffset+=2)),
+                Commands.triggeredDynamicCommand(()->gamepad1.dpad_right,()->gamepad1.dpad_left,new Commands.InstantCommand(()->velocityOffset+=2),new Commands.InstantCommand(()->velocityOffset-=2)),
                 new Commands.ContinuousCommand(
                         ()->{
                             setTargetPoint();

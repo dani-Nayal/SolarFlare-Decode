@@ -50,7 +50,7 @@ public class Diagnostic extends LinearOpMode {
                             new Commands.SequentialCommand(frontIntakeGate.moveToTargetCommand("open"),new Commands.SleepCommand(0.5),frontIntakeGate.moveToTargetCommand("closed"),new Commands.SleepCommand(0.5)),
                             new Commands.SequentialCommand(backIntakeGate.moveToTargetCommand("open"),new Commands.SleepCommand(0.5),backIntakeGate.moveToTargetCommand("closed"),new Commands.SleepCommand(0.5)),
                             turretPitch.command(servo->new Commands.SequentialCommand(servo.moveToTargetCommand(130),new Commands.SleepCommand(0.5),servo.moveToTargetCommand(110),new Commands.SleepCommand(0.5))),
-                            turretYaw.command(servo->new Commands.SequentialCommand(servo.moveToTargetCommand(30),new Commands.SleepCommand(0.5),servo.moveToTargetCommand(60),new Commands.SleepCommand(0.5)))
+                            turretYaw.command(servo->new Commands.SequentialCommand(servo.moveToTargetCommand(180),new Commands.SleepCommand(0.5),servo.moveToTargetCommand(250),new Commands.SleepCommand(0.5)))
                     ),
                     new Commands.ParallelCommand(
                             frontIntake.setPowerCommand(0),

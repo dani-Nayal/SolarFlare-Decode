@@ -11,6 +11,7 @@ import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_PITCH_O
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_PITCH_RATIO;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_YAW_OFFSET;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_YAW_RATIO;
+import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.YAW_FIGHT;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.alliance;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.ballStorage;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.classifierBallCount;
@@ -92,7 +93,7 @@ public class FarPrimeSigmaConstants {
     }
     public static double mirrorHeading(double input){return Math.PI - input;}
     static {
-        poses.put("start",new Pose(60, 9, Math.toRadians(90)));
+        poses.put("start",new Pose(60, 8.25, Math.toRadians(90)));
         poses.put("preloadShoot",new Pose(54.6,18.9,Math.toRadians(140)));
         poses.put("firstSpike",new Pose(21.1,35.2,Math.toRadians(140)));
         poses.put("firstShoot",new Pose(46.4, 13.3,Math.toRadians(180)));
@@ -222,7 +223,7 @@ public class FarPrimeSigmaConstants {
         );
         turretYaw.call(servo->servo.switchControl("setPos"));
         executor.runLoop(opMode::opModeInInit);
-        turretOffsetFromAuto = turretYaw.get("turretYawTop").getOffset();
+        turretOffsetFromAuto = turretYaw.get("turretYawTop").getOffset() + YAW_FIGHT;
         Components.activateActuatorControl();
         executor.setWriteToTelemetry(()->{
             telemetry.addData("Motif",Arrays.asList(motif));

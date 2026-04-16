@@ -11,7 +11,6 @@ import static org.firstinspires.ftc.teamcode.robotconfigs.Fisiks.runPhysics;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Fisiks.success;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Fisiks.yawBrackets;
 
-import static java.lang.Math.PI;
 import static java.lang.Math.floor;
 
 import org.apache.commons.lang3.tuple.Triple;
@@ -31,6 +30,7 @@ import org.firstinspires.ftc.teamcode.base.Components;
 import org.firstinspires.ftc.teamcode.base.Components.*;
 import org.firstinspires.ftc.teamcode.presets.PresetControl.*;
 import org.firstinspires.ftc.teamcode.vision.Vision;
+import static org.apache.commons.math3.util.FastMath.log;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -59,6 +59,8 @@ public class Inferno implements RobotConfig{
     public static final double TURRET_YAW_RATIO = 1.057777777777676767/(48.0/20.0 * 39.0/83.0);
     public static final double TURRET_YAW_OFFSET = 143.24-13.0/3;
     public static final double YAW_FEEDFORWARD = 0.088;
+    public static final double YAW_FIGHT = 1;
+    public static final double HOOD_FIGHT = 1;
     public static BotMotor frontIntake  = new BotMotor("frontIntake", DcMotorSimple.Direction.FORWARD);
     public static BotMotor backIntake = new BotMotor("backIntake", DcMotorSimple.Direction.FORWARD);
     public static SyncedActuators<CRBotServo> sideRollers = new SyncedActuators<>(
@@ -138,8 +140,8 @@ public class Inferno implements RobotConfig{
                         new ControlSystem<>(new String[]{"targetVelocity"}, List.of(() -> targetFlywheelVelocity), leftVelocityPID, new CustomFeedforward(1.057, ()->targetFlywheelVelocity/MaxVelRegression.regressFormula(voltageSensorRead.get())),
                                 new CustomFeedforward(0.05, ()->{if (useVelFeedforward && Math.abs(targetFlywheelVelocity-flywheel.get("flywheelLeft").getVelocity())>40) return getFlywheelVelProjected(); else return 0.0;}),
                                 new Clamp(), new CustomFeedforward(1, ()->{
-                                    if (((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()<targetFlywheelVelocity-20)) {return 1.0;}
-                                    if ((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+35){return -0.5;}
+                                    if (((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()<targetFlywheelVelocity-15)) {return 1.0;}
+                                    if ((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+20){return -1.0;}
                                     else if (flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+85){return -1.0;}
                                     else {return 0.0;}}),
                                 new Clamp()
@@ -149,13 +151,13 @@ public class Inferno implements RobotConfig{
                                 new CustomFeedforward(0.05, ()->{if (useVelFeedforward && Math.abs(targetFlywheelVelocity-flywheel.get("flywheelLeft").getVelocity())>40) return getFlywheelVelProjected(); else return 0.0;}),
                                 new Clamp(), new CustomFeedforward(1, ()->{
                                     if (((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()<targetFlywheelVelocity-15)) {return 1.0;}
-                                    else if ((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+54){return -1.0;}
+                                    else if ((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+20){return -1.0;}
                                     else if (flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+85){return -1.0;}
                                     else {return 0.0;}}),
                                 new Clamp()
                         ))
         );
-        turretYaw.call(servo -> servo.setTargetBounds(() -> 210.0 * TURRET_YAW_RATIO + TURRET_YAW_OFFSET, () -> -110.0 * TURRET_YAW_RATIO + TURRET_YAW_OFFSET));
+        turretYaw.call(servo -> servo.setTargetBounds(() -> 180.0 * TURRET_YAW_RATIO + TURRET_YAW_OFFSET, () -> -110.0 * TURRET_YAW_RATIO + TURRET_YAW_OFFSET));
         turretPitch.call((BotServo servo) -> servo.setTargetBounds(() -> 159.8, () -> 85.9));
         turretPitch.call((BotServo servo)->servo.setPositionCacheThreshold(0.2));
         frontIntake.setKeyPowers(
@@ -443,10 +445,10 @@ public class Inferno implements RobotConfig{
         if (!useTurretSOTM || currentBallPath == BallPath.HIGH) turret[1] = Math.toDegrees(Math.atan2(targetPoint[1] - pos.getY(),targetPoint[0] - pos.getX()));
         double heading = Math.toDegrees(follower.getHeading());
         turret[1] = turret[1]%360;
-        if ((turret[1]-heading)<=-150) turret[1] += 360;
+        if ((turret[1]-heading)<=-180) turret[1] += 360;
         else if ((turret[1]-heading)>=250) turret[1] -= 360;
         hoodDesired = turret[0];
-        yawDesired = turret[1];
+        yawDesired = turret[1] - heading;
         double turretFeedforward = Math.max(-50,Math.min(50,YAW_FEEDFORWARD*getTurretVelProjected()));
         turretPitch.call((BotServo servo)->servo.setTarget(turret[0]*TURRET_PITCH_RATIO+TURRET_PITCH_OFFSET));
         turretYaw.call(servo->servo.setTarget((turret[1]-heading)*TURRET_YAW_RATIO+TURRET_YAW_OFFSET+turretFeedforward));
@@ -800,13 +802,10 @@ public class Inferno implements RobotConfig{
         }
     }
     public abstract static class VelRegression {
-        private static final double M = 5.4;
-        private static final double B = 606;
-        private static final double M_MOTIF = 5.6;
-        private static final double B_MOTIF = 606;
+        private static final double B = -1296;
+        private static final double M = 650;
         public static double regressFormula(double dist){
-            if (shotType == ShotType.NORMAL) return 33.0/23.0*(M *dist+ B);
-            else return 33.0/23.0*(M_MOTIF *dist+ B_MOTIF);
+            return B+650*log(dist);
         }
     }
     public static void setTargetPoint(){
@@ -880,61 +879,11 @@ public class Inferno implements RobotConfig{
         motifShootAll = true;
         ballStorage = new Color[3];
         classifierBallCount=0;
-        /*
-        if (alliance == Alliance.RED) autoGateIntake = new ParallelCommand(setState(RobotState.STOPPED),
-                new PedroCommand(
-                        (PathBuilder b)->{RobotState intakeDirection = RobotState.INTAKE_FRONT; double targetHeading = 0; double tangentHeading = Math.atan2(64-follower.getPose().getY(),128-follower.getPose().getX());
-                            if (Math.toDegrees(follower.getHeading())>90 || Math.toDegrees(follower.getHeading())<-90) {intakeDirection = RobotState.INTAKE_BACK; targetHeading = 180; tangentHeading+=180;}
-                            final double finalTargetHeading = targetHeading;
-                            return b.addPath(new BezierLine(follower::getPose,new Pose(128,64)))
-                                    .setHeadingInterpolation(HeadingInterpolator.piecewise(
-                                            new HeadingInterpolator.PiecewiseNode(
-                                                    0.0,0.25,HeadingInterpolator.linear(follower.getHeading(), tangentHeading)
-                                            ),
-                                            new HeadingInterpolator.PiecewiseNode(
-                                                    0.25,0.75,HeadingInterpolator.constant(tangentHeading)
-                                            ),
-                                            new HeadingInterpolator.PiecewiseNode(
-                                                    0.75,1.0,HeadingInterpolator.linearFromPoint(follower::getHeading,()->finalTargetHeading,1.0)
-                                            )
-                                    ))
-                                    .addParametricCallback(0.85,()->follower.setMaxPower(0.5))
-                                    .addPath(new BezierCurve(follower::getPose,new Pose(126,58),new Pose(128,57)))
-                                    .setLinearHeadingInterpolation(Math.toRadians(targetHeading),Math.toRadians(targetHeading+45))
-                                    .addParametricCallback(0,setState(intakeDirection)::run)
-                                    .addParametricCallback(0.2,()->follower.setMaxPower(1.0));},false
-                )
-        );
-        else autoGateIntake = new ParallelCommand(setState(RobotState.STOPPED),
-                new PedroCommand(
-                        (PathBuilder b)->{RobotState intakeDirection = RobotState.INTAKE_FRONT; double targetHeading = 180; double tangentHeading = Math.atan2(64-follower.getPose().getY(),16-follower.getPose().getX());
-                            if (Math.toDegrees(follower.getHeading())<90 && Math.toDegrees(follower.getHeading())>-90) {intakeDirection = RobotState.INTAKE_BACK; targetHeading = 0; tangentHeading += 180;}
-                            final double finalTargetHeading = targetHeading;
-                            return b.addPath(new BezierLine(follower::getPose,new Pose(16,64)))
-                                    .setHeadingInterpolation(HeadingInterpolator.piecewise(
-                                            new HeadingInterpolator.PiecewiseNode(
-                                                    0.0,0.25,HeadingInterpolator.linear(follower.getHeading(), tangentHeading)
-                                            ),
-                                            new HeadingInterpolator.PiecewiseNode(
-                                                    0.25,0.75,HeadingInterpolator.constant(tangentHeading)
-                                            ),
-                                            new HeadingInterpolator.PiecewiseNode(
-                                                    0.75,1.0,HeadingInterpolator.linearFromPoint(follower::getHeading,()->finalTargetHeading,1.0)
-                                            )
-                                    ))
-                                    .addParametricCallback(0.85,()->follower.setMaxPower(0.5))
-                                    .addPath(new BezierCurve(follower::getPose,new Pose(18,58),new Pose(16,57)))
-                                    .setLinearHeadingInterpolation(Math.toRadians(targetHeading),Math.toRadians(targetHeading-45))
-                                    .addParametricCallback(0,setState(intakeDirection)::run)
-                                    .addParametricCallback(0.2,()->follower.setMaxPower(1.0));},false
-                )
-        );
-        */
         if (alliance == Alliance.RED) relocalizePose = new Pose(9,7.5,Math.toRadians(180));
         else if (alliance == Alliance.BLUE) relocalizePose = new Pose(135,7.5,Math.toRadians(0));
-        turretYaw.get("turretYawTop").setOffset(-0.5);
-        turretYaw.get("turretYawBottom").setOffset(0.5);
-        turretPitch.get("turretPitchLeft").setOffset(-0.5);
-        turretPitch.get("turretPitchRight").setOffset(0.5);
+        turretYaw.get("turretYawTop").setOffset(-YAW_FIGHT);
+        turretYaw.get("turretYawBottom").setOffset(YAW_FIGHT);
+        turretPitch.get("turretPitchLeft").setOffset(-HOOD_FIGHT);
+        turretPitch.get("turretPitchRight").setOffset(HOOD_FIGHT);
     }
 }

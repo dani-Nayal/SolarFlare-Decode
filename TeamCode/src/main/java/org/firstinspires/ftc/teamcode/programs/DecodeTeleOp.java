@@ -6,6 +6,7 @@ import static org.firstinspires.ftc.teamcode.base.Components.timer;
 import static org.firstinspires.ftc.teamcode.pedroPathing.Pedro.follower;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_PITCH_OFFSET;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_PITCH_RATIO;
+import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.YAW_FIGHT;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.ballStorage;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.classifierBallCount;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.findMotif;
@@ -92,15 +93,15 @@ public class DecodeTeleOp extends LinearOpMode {
         useVelFeedforward = true;
         initialize(this,new Inferno(),false,true);
         Components.telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
-        if (Objects.isNull(follower)) {Pedro.createFollower(new Pose(72,24,0)); followerMade = true; Inferno.motifDetected = false; turretOffsetFromAuto = 0;}
+        if (Objects.isNull(follower)) {Pedro.createFollower(new Pose(72,72,0)); followerMade = true; Inferno.motifDetected = false; turretOffsetFromAuto = 0;}
         else {Pedro.createFollower(follower.getPose());}
         executor.setCommands(
-                new RunResettingLoop(new InstantCommand(()->{if (gamepad1.back && !followerMade) {follower.setPose(new Pose(72,24,0)); followerMade = true; Inferno.motifDetected = false;  turretOffsetFromAuto = 0;}})),
+                new RunResettingLoop(new InstantCommand(()->{if (gamepad1.back && !followerMade) {follower.setPose(new Pose(72,72,0)); followerMade = true; Inferno.motifDetected = false;  turretOffsetFromAuto = 0;}})),
                 new RunResettingLoop(new InstantCommand(()->{if (gamepad1.dpad_left) {Inferno.alliance = Alliance.BLUE;}})),
                 new RunResettingLoop(new InstantCommand(()->{if (gamepad1.dpad_right) {Inferno.alliance = Alliance.RED;}}))
         );
-        turretYaw.get("turretYawTop").setOffset(turretOffsetFromAuto-0.5);
-        turretYaw.get("turretYawBottom").setOffset(turretOffsetFromAuto+0.5);
+        turretYaw.get("turretYawTop").setOffset(turretOffsetFromAuto-YAW_FIGHT);
+        turretYaw.get("turretYawBottom").setOffset(turretOffsetFromAuto+YAW_FIGHT);
         executor.runLoop(this::opModeInInit);
         Components.activateActuatorControl();
         breakFollowing();
