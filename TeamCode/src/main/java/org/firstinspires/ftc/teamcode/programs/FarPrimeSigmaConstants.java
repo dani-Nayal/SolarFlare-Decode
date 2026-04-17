@@ -218,6 +218,7 @@ public class FarPrimeSigmaConstants {
         });
         double targetX = (alliance == Inferno.Alliance.RED) ? 141.5 : 2.5;
         executor.setCommands(
+                new SequentialCommand(new SleepCommand(1.0),new InstantCommand(Inferno::initTurretYawPosition)),
                 turretYaw.command(servo->servo.instantSetTargetCommand(Math.toDegrees(atan2(141.5-follower.getPose().getY(), targetX-follower.getPose().getX()) - follower.getHeading())*TURRET_YAW_RATIO+TURRET_YAW_OFFSET)),
                 turretYaw.command(servo->servo.triggeredDynamicOffsetCommand(()->gamepad1.left_trigger>0.2,()->gamepad1.right_trigger>0.2,0.05))
         );

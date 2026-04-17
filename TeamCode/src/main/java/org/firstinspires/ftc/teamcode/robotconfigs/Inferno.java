@@ -60,7 +60,9 @@ public class Inferno implements RobotConfig{
     public static final double TURRET_YAW_OFFSET = 143.24-13.0/3;
     public static final double YAW_FEEDFORWARD = 0.088;
     public static final double YAW_FIGHT = 1;
-    public static final double HOOD_FIGHT = 1;
+    public static final double HOOD_FIGHT = 0;
+    public static final double ENCODER_RATIO = -(360*39.0/83.0)/4096;
+    public static double ENCODER_OFFSET = 0;
     public static BotMotor frontIntake  = new BotMotor("frontIntake", DcMotorSimple.Direction.FORWARD);
     public static BotMotor backIntake = new BotMotor("backIntake", DcMotorSimple.Direction.FORWARD);
     public static SyncedActuators<CRBotServo> sideRollers = new SyncedActuators<>(
@@ -101,6 +103,13 @@ public class Inferno implements RobotConfig{
     public final static double[] turret = new double[2];
     public static Pose relocalizePose;
     public static boolean useTurretSOTM = true;
+    public static void initTurretYawPosition(){
+        leftFront.resetEncoder();
+        ENCODER_OFFSET = (turretYaw.get("turretYawTop").getTargetMinusOffset()-TURRET_YAW_OFFSET)/TURRET_YAW_RATIO;
+    }
+    public static double getTurretYawPosition(){
+        return leftFront.getCurrentPosition()*ENCODER_RATIO + ENCODER_OFFSET;
+    }
     public static double getFlywheelVelProjected() {
         setTargetPoint();
         Pose pos = follower.getPose();
@@ -467,6 +476,7 @@ public class Inferno implements RobotConfig{
                     new IfThen(()->Objects.isNull(robotState), stopAll)
             ),
             new InstantCommand(()->{if ((robotState!=RobotState.SHOOTING && robotState!=RobotState.STOPPED && Objects.nonNull(robotState)) || shotType==ShotType.NORMAL){currentBallPath=BallPath.LOW;}}),
+            new CheckSkip(),
             setShooter
     );
     private static void colorSensorRead(int index){
@@ -572,6 +582,32 @@ public class Inferno implements RobotConfig{
                 }
             }
     );
+    public static class CheckSkip extends Command {
+        private double prevTarget = Double.NaN;
+        private double prevPosition = Double.NaN;
+        private int counter = 0;
+        private static final double THRESHOLD = 1;
+        private static final int LOOPS = 3;
+        private boolean isSame(double one, double two){return two<=one+THRESHOLD && two >= one-THRESHOLD;}
+        @Override
+        protected boolean runProcedure() {
+            double position = getTurretYawPosition();
+            double target = (turretYaw.get("turretYawOffset").getTargetMinusOffset()-TURRET_YAW_OFFSET)/TURRET_YAW_RATIO;
+            if (isSame(prevTarget,target) &&
+                isSame(prevPosition,position)){
+                counter+=1;
+            }
+            if (counter>=LOOPS){
+                counter = 0;
+                if (!isSame(target,position)){
+                    turretYaw.call(servo->servo.setOffset(servo.getOffset() + target-position));
+                }
+            }
+            prevTarget = target;
+            prevPosition = position;
+            return true;
+        }
+    }
     public static class AprilTagRelocalize extends Command {
         public static final int LOOPS = 2;
         private int counter = 0;
