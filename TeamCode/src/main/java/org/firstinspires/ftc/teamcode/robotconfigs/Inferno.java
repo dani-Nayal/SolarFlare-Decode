@@ -476,7 +476,7 @@ public class Inferno implements RobotConfig{
                     new IfThen(()->Objects.isNull(robotState), stopAll)
             ),
             new InstantCommand(()->{if ((robotState!=RobotState.SHOOTING && robotState!=RobotState.STOPPED && Objects.nonNull(robotState)) || shotType==ShotType.NORMAL){currentBallPath=BallPath.LOW;}}),
-            new CheckSkip(),
+            //new CheckSkip(),
             setShooter
     );
     private static void colorSensorRead(int index){
