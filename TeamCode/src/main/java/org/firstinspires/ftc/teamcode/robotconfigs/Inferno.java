@@ -419,15 +419,9 @@ public class Inferno implements RobotConfig{
         //targetFlywheelVelocity = Math.min(Math.max(targetFlywheelVelocity,800*33.0/23),1500*33.0/23);
         if (robotState == RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT) {
             double startTime = timer.time();
-            /*
             FisiksCache.runCachedPhysics();
             turret[0] = FisiksCache.output[0];
             turret[1] = FisiksCache.output[1];
-            */
-            Fisiks.runPhysics(currentBallPath, targetPoint, follower.getPose(), follower.getVelocity(), targetFlywheelVelocity);
-            turret[0] = Math.toDegrees(out[0]);
-            turret[1] = Math.toDegrees(out[1]);
-            if (!success) telemetry.addLine("PHYSICS FAILED TO CONVERGE");
             double endTime = timer.time(); physicsTime = endTime-startTime;
         }
         else {
@@ -832,27 +826,28 @@ public class Inferno implements RobotConfig{
         public static final HashMap<Integer,Boolean> successCache = new HashMap<>();
         public static void runCachedPhysics(){
             Pose pos = follower.getPose();
+            int newVel = (int) Math.max(flywheel.get("flywheelLeft").getVelocity(), floor(targetFlywheelVelocity/20)*20 - 100);
             if (follower.getPose().distanceFrom(previousPos)>CACHE_CLEAR_THRESHOLD || follower.getVelocity().getMagnitude()>VEL_CACHE_CLEAR_THRESHOLD){
                 telemetry.addLine("CLEARING");
                 previousPos = follower.getPose();
                 clearCache();
             }
-            if (cache.containsKey((int) flywheel.get("flywheelLeft").getVelocity())){
-                output[0] = Objects.requireNonNull(cache.get((int) flywheel.get("flywheelLeft").getVelocity()))[0];
-                output[1] = Objects.requireNonNull(cache.get((int) flywheel.get("flywheelLeft").getVelocity()))[1];
+            if (cache.containsKey(newVel)){
+                output[0] = Objects.requireNonNull(cache.get(newVel))[0];
+                output[1] = Objects.requireNonNull(cache.get(newVel))[1];
                 telemetry.addLine("CACHED");
             } else {
-                runPhysics(currentBallPath, targetPoint, follower.getPose(), follower.getVelocity(), flywheel.get("flywheelLeft").getVelocity());
+                runPhysics(currentBallPath, targetPoint, follower.getPose(), follower.getVelocity(), newVel);
                 output[0] = Math.toDegrees(out[0]);
                 output[1] = Math.toDegrees(out[1]);
-                cache.put((int) flywheel.get("flywheelLeft").getVelocity(), new Double[]{output[0],output[1]});
-                successCache.put((int) flywheel.get("flywheelLeft").getVelocity(), success);
+                cache.put(newVel, new Double[]{output[0],output[1]});
+                successCache.put(newVel, success);
                 telemetry.addLine("RUNNING");
             }
             if (follower.getVelocity().getMagnitude()<VEL_CACHE_CLEAR_THRESHOLD){
                 output[1] = Math.toDegrees(Math.atan2(targetPoint[1] - pos.getY(),targetPoint[0] - pos.getX()));
             }
-            telemetry.addData("Converged",successCache.get((int) flywheel.get("flywheelLeft").getVelocity()));
+            telemetry.addData("Converged",successCache.get(newVel));
         }
         public static void clearCache() {cache.clear(); successCache.clear();}
     }
