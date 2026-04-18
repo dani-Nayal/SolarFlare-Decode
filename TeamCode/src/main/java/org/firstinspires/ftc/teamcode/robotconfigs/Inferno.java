@@ -149,8 +149,8 @@ public class Inferno implements RobotConfig{
                         new ControlSystem<>(new String[]{"targetVelocity"}, List.of(() -> targetFlywheelVelocity), leftVelocityPID, new CustomFeedforward(1.057, ()->targetFlywheelVelocity/MaxVelRegression.regressFormula(voltageSensorRead.get())),
                                 new CustomFeedforward(0.05, ()->{if (useVelFeedforward && Math.abs(targetFlywheelVelocity-flywheel.get("flywheelLeft").getVelocity())>40) return getFlywheelVelProjected(); else return 0.0;}),
                                 new Clamp(), new CustomFeedforward(1, ()->{
-                                    if (((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()<targetFlywheelVelocity-15)) {return 1.0;}
-                                    if ((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+20){return -1.0;}
+                                    if (((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()<targetFlywheelVelocity-65)) {return 1.0;}
+                                    if ((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+10){return -1.0;}
                                     else if (flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+85){return -1.0;}
                                     else {return 0.0;}}),
                                 new Clamp()
@@ -159,8 +159,8 @@ public class Inferno implements RobotConfig{
                         new ControlSystem<>(new String[]{"targetVelocity"}, List.of(() -> targetFlywheelVelocity), rightVelocityPID, new CustomFeedforward(1.057, ()->targetFlywheelVelocity/MaxVelRegression.regressFormula(voltageSensorRead.get())),
                                 new CustomFeedforward(0.05, ()->{if (useVelFeedforward && Math.abs(targetFlywheelVelocity-flywheel.get("flywheelLeft").getVelocity())>40) return getFlywheelVelProjected(); else return 0.0;}),
                                 new Clamp(), new CustomFeedforward(1, ()->{
-                                    if (((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()<targetFlywheelVelocity-15)) {return 1.0;}
-                                    else if ((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+20){return -1.0;}
+                                    if (((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()<targetFlywheelVelocity-65)) {return 1.0;}
+                                    else if ((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+10){return -1.0;}
                                     else if (flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+85){return -1.0;}
                                     else {return 0.0;}}),
                                 new Clamp()
