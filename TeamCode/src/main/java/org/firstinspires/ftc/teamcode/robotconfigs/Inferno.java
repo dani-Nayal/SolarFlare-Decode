@@ -369,7 +369,8 @@ public class Inferno implements RobotConfig{
                     backIntakeGate.instantSetTargetCommand("closed")
             ),
             new ContinuousCommand(()->{})
-        ),
+        )
+        /*
         new RunLoop(
             new ConditionalCommand(new IfThen(
                 ()->shotType==ShotType.MOTIF,
@@ -378,6 +379,7 @@ public class Inferno implements RobotConfig{
                 )
             ))
         )
+        */
     );
     public static final ParallelCommand expel = new ParallelCommand(
             sideRollers.command(servo->servo.setPowerCommand(0.0)),
@@ -416,7 +418,8 @@ public class Inferno implements RobotConfig{
                     ),
                     new IfThen(
                             () -> shotType == ShotType.MOTIF,
-                            MotifShoot.getFullMotifCommand()
+                            //MotifShoot.getFullMotifCommand()
+                            new SemiSort()
                     )
             ),
             new ContinuousCommand(()->{})
