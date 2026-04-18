@@ -85,8 +85,8 @@ public class Inferno implements RobotConfig{
     public static ShotType shotType = ShotType.NORMAL;
     public static final double[] targetPoint = new double[3];
     public static boolean motifShootAll = true;
-    private final static double TRANSFER_SELECT_DELAY = 0.025;
-    private final static double TRANSFER_REBOOST_DELAY = 0.053;
+    private final static double TRANSFER_SELECT_DELAY = 0.035;
+    private final static double TRANSFER_REBOOST_DELAY = 0.093;
     public static Color[] motif = new Color[]{Color.PURPLE,Color.GREEN,Color.PURPLE};
     public static double classifierBallCount = 0;
     public static Alliance alliance = Alliance.RED;
@@ -832,10 +832,13 @@ public class Inferno implements RobotConfig{
         }
     }
     public abstract static class VelRegression {
-        private static final double B = -1296;
-        private static final double M = 650;
+        private static final double M = 7.69;
+        private static final double B = 823;
+        private static final double M_MOTIF = 7.69;
+        private static final double B_MOTIF = 823;
         public static double regressFormula(double dist){
-            return B+650*log(dist);
+            if (shotType == ShotType.NORMAL) return (M *dist+ B);
+            else return (M_MOTIF *dist+ B_MOTIF);
         }
     }
     public static void setTargetPoint(){
@@ -862,28 +865,27 @@ public class Inferno implements RobotConfig{
         public static final HashMap<Integer,Boolean> successCache = new HashMap<>();
         public static void runCachedPhysics(){
             Pose pos = follower.getPose();
-            int newVel = (int) Math.max(flywheel.get("flywheelLeft").getVelocity(), floor(targetFlywheelVelocity/20)*20 - 100);
             if (follower.getPose().distanceFrom(previousPos)>CACHE_CLEAR_THRESHOLD || follower.getVelocity().getMagnitude()>VEL_CACHE_CLEAR_THRESHOLD){
                 telemetry.addLine("CLEARING");
                 previousPos = follower.getPose();
                 clearCache();
             }
-            if (cache.containsKey(newVel)){
-                output[0] = Objects.requireNonNull(cache.get(newVel))[0];
-                output[1] = Objects.requireNonNull(cache.get(newVel))[1];
+            if (cache.containsKey((int) flywheel.get("flywheelLeft").getVelocity())){
+                output[0] = Objects.requireNonNull(cache.get((int) flywheel.get("flywheelLeft").getVelocity()))[0];
+                output[1] = Objects.requireNonNull(cache.get((int) flywheel.get("flywheelLeft").getVelocity()))[1];
                 telemetry.addLine("CACHED");
             } else {
-                runPhysics(currentBallPath, targetPoint, follower.getPose(), follower.getVelocity(), newVel);
+                runPhysics(currentBallPath, targetPoint, follower.getPose(), follower.getVelocity(), targetFlywheelVelocity);
                 output[0] = Math.toDegrees(out[0]);
                 output[1] = Math.toDegrees(out[1]);
-                cache.put(newVel, new Double[]{output[0],output[1]});
-                successCache.put(newVel, success);
+                cache.put((int) flywheel.get("flywheelLeft").getVelocity(), new Double[]{output[0],output[1]});
+                successCache.put((int) flywheel.get("flywheelLeft").getVelocity(), success);
                 telemetry.addLine("RUNNING");
             }
             if (follower.getVelocity().getMagnitude()<VEL_CACHE_CLEAR_THRESHOLD){
                 output[1] = Math.toDegrees(Math.atan2(targetPoint[1] - pos.getY(),targetPoint[0] - pos.getX()));
             }
-            telemetry.addData("Converged",successCache.get(newVel));
+            telemetry.addData("Converged",successCache.get((int) flywheel.get("flywheelLeft").getVelocity()));
         }
         public static void clearCache() {cache.clear(); successCache.clear();}
     }

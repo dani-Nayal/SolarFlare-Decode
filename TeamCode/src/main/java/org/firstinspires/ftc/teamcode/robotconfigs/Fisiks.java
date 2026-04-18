@@ -22,8 +22,8 @@ public abstract class Fisiks {
     final static double BALL_RAD = 2.5;
     final static double SURFACE_SPEED_RATIO = 0.7055555556;
 
-    public static double LOW_FRICTION = 0.713;
-    public static double HIGH_FRICTION = 0.713;
+    public static double LOW_FRICTION = 0.74;
+    public static double HIGH_FRICTION = 0.74;
     final static double AUTHORITY = 0.25;
     final static double TRANSLATIONAL_DRAG = 0.5;
     final static double ANGULAR_DRAG = 0;

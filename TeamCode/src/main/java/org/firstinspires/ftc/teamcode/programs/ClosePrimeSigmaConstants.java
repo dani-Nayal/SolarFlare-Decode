@@ -111,7 +111,7 @@ public class ClosePrimeSigmaConstants {
         poses.put("shoot",new Pose(SHOOT[0],SHOOT[1],SHOOT[2]));
         poses.put("secondSpikeCtrl",new Pose(41.07, 58.06));
         poses.put("secondSpike",new Pose(18.829, 58.805));
-        poses.put("gateOpen",new Pose(14, 58,Math.toRadians(160)));
+        poses.put("gateOpen",new Pose(14, 54,Math.toRadians(160)));
         poses.put("firstSpike",new Pose(22.773, 77.829,Math.toRadians(180)));
         poses.put("thirdSpikeCtrl",new Pose(80.067, 27.483));
         poses.put("thirdSpike",new Pose(13.504, 41.131,Math.toRadians(180)));
@@ -168,7 +168,7 @@ public class ClosePrimeSigmaConstants {
                                             getPose("shoot")
                                     )
                             )
-                            .setHeadingInterpolation(HeadingInterpolator.linear(getHeading("gateIntake"), getHeading("shoot"),0.2))
+                            .setHeadingInterpolation(HeadingInterpolator.linear(getHeading("gateOpen"), getHeading("shoot"),0.2))
                             .addParametricCallback(stopIntakeT,()->setState(Inferno.RobotState.STOPPED).run())
                             .addParametricCallback(shootSlowT,()->follower.setMaxPower(shootSlowAmount))
                             .addParametricCallback(0.93,()->follower.setMaxPower(1.0)),
