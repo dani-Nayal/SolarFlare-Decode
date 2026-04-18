@@ -42,6 +42,7 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import org.firstinspires.ftc.teamcode.base.Commands;
 import org.firstinspires.ftc.teamcode.base.Commands.*;
 
+import com.pedropathing.control.PIDFCoefficients;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -94,7 +95,6 @@ public class DecodeTeleOp extends LinearOpMode {
         initialize(this,new Inferno(),false,true);
         Components.telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         if (Objects.isNull(follower)) {Pedro.createFollower(new Pose(72,72,0)); followerMade = true; Inferno.motifDetected = false; turretOffsetFromAuto = 0;}
-        else {Pedro.createFollower(follower.getPose());}
         executor.setCommands(
                 new SequentialCommand(new SleepCommand(1.0),new InstantCommand(Inferno::initTurretYawPosition)),
                 new RunResettingLoop(new InstantCommand(()->{if (gamepad1.back && !followerMade) {follower.setPose(new Pose(72,72,0)); followerMade = true; Inferno.motifDetected = false;  turretOffsetFromAuto = 0;}})),
@@ -104,6 +104,8 @@ public class DecodeTeleOp extends LinearOpMode {
         turretYaw.get("turretYawTop").setOffset(turretOffsetFromAuto-YAW_FIGHT);
         turretYaw.get("turretYawBottom").setOffset(turretOffsetFromAuto+YAW_FIGHT);
         executor.runLoop(this::opModeInInit);
+        follower.setTranslationalPIDFCoefficients(new PIDFCoefficients(0.2*1.4/0.45, 0, 0.001*1.4/0.45, 0));
+        follower.setHeadingPIDFCoefficients(new PIDFCoefficients(1.1*0.4/0.35,0.001*0.4/0.35,0.00001*0.4/0.35,0));
         Components.activateActuatorControl();
         breakFollowing();
         Command aprilTag = new AprilTagRelocalize();

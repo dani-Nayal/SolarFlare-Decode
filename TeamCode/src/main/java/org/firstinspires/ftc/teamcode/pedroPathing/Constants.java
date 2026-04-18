@@ -62,19 +62,11 @@ public class Constants {
 
     public static Follower createFollower(HardwareMap hardwareMap) {
         followerConstants.usePredictiveBraking = true;
-        if (gamePhase== Inferno.GamePhase.TELEOP){
-            followerConstants.setHoldPointTranslationalScaling(1.4);
-            followerConstants.setHoldPointHeadingScaling(0.4);
-        }
         Follower follower = new FollowerBuilder(followerConstants, hardwareMap)
                 .mecanumDrivetrain(driveConstants)
                 .pinpointLocalizer(localizerConstants)
                 .pathConstraints(pathConstraints)
                 .build();
-        if (gamePhase== Inferno.GamePhase.TELEOP) {
-            follower.setTranslationalPIDFCoefficients(new PIDFCoefficients(0.2, 0, 0.001, 0));
-            follower.setHeadingPIDFCoefficients(new PIDFCoefficients(1.1,0.001,0.00001,0));
-        }
         return follower;
     }
 }
