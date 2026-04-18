@@ -766,12 +766,15 @@ public class Inferno implements RobotConfig{
                             shotSequence[1] = motif[0];
                             shotSequence[2] = motif[1];
                         }
-                        if (shotSequence[1]==ballStorage[0] && shotSequence[1]!=ballStorage[2]){
-                            transferDirection = 0;
-                        } else transferDirection = 2;
+                        if (Objects.nonNull(ballStorage[0]) && Objects.nonNull(ballStorage[2])){
+                            if (shotSequence[1]==ballStorage[0] && shotSequence[1]!=ballStorage[2]){
+                                transferDirection = 0;
+                            } else transferDirection = 2;
+                        } else transferDirection = 1;
                     }),
                     new ConditionalCommand(
                             new IfThen(()->transferDirection==0,frontTransfer),
+                            new IfThen(()->transferDirection==1,midTransfer),
                             new IfThen(()->transferDirection==2,backTransfer)
                     )
             ));
