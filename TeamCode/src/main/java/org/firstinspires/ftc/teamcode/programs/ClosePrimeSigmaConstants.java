@@ -152,7 +152,7 @@ public class ClosePrimeSigmaConstants {
                 .addParametricCallback(stopIntakeT,()->setState(Inferno.RobotState.STOPPED).run())
                 .addParametricCallback(secondShootSlowT,()->follower.setMaxPower(shootSlowAmount))
                 .addParametricCallback(0.93,()->follower.setMaxPower(1.0)), true), shoot);
-    public static Command gate = new SequentialCommand(setState(null), new PedroCommand(
+    public static Command gate = new SequentialCommand(new PedroCommand(
             (PathBuilder b)->b.addPath(
                     new BezierLine(
                             follower::getPose,
