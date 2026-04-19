@@ -132,11 +132,11 @@ public class Vision {
         return artifacts;
     }
 
-    public List<Artifact> getArtifactDescriptors(Pose botPosePedro){
+    public List<Artifact> getArtifacts(Pose botPosePedro){
         if (!limelight.isRunning()) limelight.start();
         if (limelight.getStatus().getPipelineIndex() != NN_PIPELINE_INDEX) limelight.pipelineSwitch(NN_PIPELINE_INDEX);
 
-        List<Artifact> artifacts = new ArrayList<>(); // Output array
+        List<Artifact> artifacts = new ArrayList<>();
         LLResult result = limelight.getLatestResult();
 
         if (result == null || !result.isValid()) return artifacts;
@@ -155,7 +155,7 @@ public class Vision {
             double tx = Math.toDegrees(Math.atan(xOffset / fxNN));
             double ty = Math.toDegrees(Math.atan(yOffset / fyNN));
 
-            double verticalAngleDeg = 90 + ty + cameraPoseOnRobot.getOrientation().getPitch(AngleUnit.DEGREES);
+            double verticalAngleDeg = ty + cameraPoseOnRobot.getOrientation().getPitch(AngleUnit.DEGREES);
 
             double depth = cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).z * Math.tan(Math.toRadians(verticalAngleDeg));
 
@@ -798,4 +798,143 @@ public class Vision {
 
         return points;
     }
+
+    public List<Artifact> getClassifierArtifacts3(List<Artifact> artifacts, Inferno.Alliance alliance){
+        if (artifacts == null || artifacts.isEmpty()) return null;
+        if (!limelight.isRunning()) limelight.start();
+
+        List<Artifact> classifierArtifacts = new ArrayList<>();
+
+        if (alliance == Inferno.Alliance.RED){
+            if (limelight.getStatus().getPipelineIndex() != CLASSIFIER_RED_PIPELINE_INDEX) limelight.pipelineSwitch(CLASSIFIER_RED_PIPELINE_INDEX);
+        }
+        else if (alliance == Inferno.Alliance.BLUE){
+            if (limelight.getStatus().getPipelineIndex() != CLASSIFIER_BLUE_PIPELINE_INDEX) limelight.pipelineSwitch(CLASSIFIER_BLUE_PIPELINE_INDEX);
+
+        }
+        else return null;
+
+        LLResult result = limelight.getLatestResult();
+
+        if (result != null && result.isValid()){
+            double[] llPython = result.getPythonOutput();
+
+            if (llPython == null) {
+                telemetry.addLine("llpython is null !!!");
+                return null;
+            }
+
+            double x1 = llPython[0];
+            double y1 = llPython[1];
+            double x2 = llPython[2];
+            double y2 = llPython[3];
+
+            double m = (y1 - y2) / (x2 - x1);
+
+            double b = y1 - m * x1;
+
+            for (Artifact artifact : artifacts){
+                double x = artifact.getTopCenterXPixels();
+                double y = artifact.getTopCenterYPixels() - 30;
+
+                double lineValue = m * x + b;
+
+                if (lineValue > y){
+                    classifierArtifacts.add(artifact);
+                }
+            }
+        }
+        else telemetry.addLine("result is null !!!");
+
+        return classifierArtifacts;
+    }
+
+    public List<List<Artifact>> getGroundAndClassifierArtifacts(Pose botPose){
+        if (botPose == null) return null;
+        if (!limelight.isRunning()) limelight.start();
+        if (limelight.getStatus().getPipelineIndex() != NN_PIPELINE_INDEX) limelight.pipelineSwitch(NN_PIPELINE_INDEX);
+
+
+        List<Artifact> artifacts = getArtifacts(botPose);
+
+        List<Artifact> classifierArtifacts = new ArrayList<>();
+
+        for (Artifact artifact : artifacts){
+            double x = artifact.getX();
+            double y = artifact.getY();
+
+            if (0 <= x && x <= 144 && 0 <= y && y <= 144){
+                classifierArtifacts.add(artifact);
+            }
+        }
+
+        artifacts.removeAll(classifierArtifacts);
+
+        List<List<Artifact>> output = new ArrayList<>();
+
+        output.add(artifacts);
+        output.add(classifierArtifacts);
+
+        return output;
+    }
+
+    public Pose getLoadingZoneIntakingPosition(List<Artifact> artifacts, Pose botPose, double yConstraint){
+        if (botPose == null) return null;
+        if (!limelight.isRunning()) limelight.start();
+        if (limelight.getStatus().getPipelineIndex() != NN_PIPELINE_INDEX) limelight.pipelineSwitch(NN_PIPELINE_INDEX);
+
+        double bestScore = Double.NEGATIVE_INFINITY;
+        double bestValue = 0;
+
+        double botX = botPose.getX();
+        double botY = botPose.getY();
+
+        for (double i = INTAKING_WIDTH_INCHES / 2; i < yConstraint; i++) {
+
+            double score = 0;
+            int count = 0;
+            double totalHorizontalDistance = 0;
+            double totalDistanceToBot = 0;
+
+            for (Artifact artifact : artifacts){
+                double artifactX = artifact.getX();
+                double artifactY = artifact.getY();
+
+                double horizontalDistance = Math.abs(i - artifactY);
+
+                if (horizontalDistance <= (INTAKING_WIDTH_INCHES / 2)){
+                    totalHorizontalDistance += horizontalDistance;
+                    double distanceToBot = Math.sqrt(Math.pow(botX - artifactX, 2) + Math.pow(botY - artifactY, 2));
+                    totalDistanceToBot += distanceToBot;
+                    count++;
+                }
+            }
+
+            if (count == 0) continue;
+
+            final double MAX_RELEVANT_DISTANCE = 35;
+
+            double w1 = 10;
+            double w2 = 4;
+            double w3 = 1;
+
+            double averageHorizontalDistance = totalHorizontalDistance / count;
+            double averageDistanceToBot = totalDistanceToBot / count;
+
+            double normPerpendicular = averageHorizontalDistance / (INTAKING_WIDTH_INCHES / 2);
+            double normDist = averageDistanceToBot / MAX_RELEVANT_DISTANCE;
+
+            score += w1 * count - w2 * normPerpendicular - w3 * normDist;
+
+            if (count >= 3) score += 100;
+
+            if (score > bestScore){
+                bestScore = score;
+                bestValue = i;
+            }
+        }
+        return new Pose(botX, bestValue);
+    }
 }
+
+

@@ -58,7 +58,7 @@ public class TestArtifactsWithPanels extends OpMode {
 
         vision.drawPoseOnPanels(panelsField, botPose, "blue");
 
-        List<Artifact> artifacts = vision.getGroundArtifacts(vision.getArtifactDescriptors(botPose));
+        List<Artifact> artifacts = vision.getGroundArtifacts(vision.getArtifacts(botPose));
 
         if (!artifacts.isEmpty()) {
 

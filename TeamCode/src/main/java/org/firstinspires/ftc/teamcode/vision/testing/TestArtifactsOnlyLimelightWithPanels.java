@@ -38,7 +38,7 @@ public class TestArtifactsOnlyLimelightWithPanels extends OpMode {
     @Override
     public void loop(){
 
-        List<Artifact> artifacts = vision.getGroundArtifacts(vision.getArtifactDescriptors(botPose));
+        List<Artifact> artifacts = vision.getGroundArtifacts(vision.getArtifacts(botPose));
 
         if (!artifacts.isEmpty()) {
 

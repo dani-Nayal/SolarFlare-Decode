@@ -143,7 +143,7 @@ public class FarPrimeSigmaConstants {
     );
     public static Pose getClusterPose(double x, double xOffset){
         Pose pos = follower.getPose();
-        Double angle = vision.intakingAngleArtifacts(vision.getArtifactDescriptors(pos),pos,1);
+        Double angle = vision.intakingAngleArtifacts(vision.getArtifacts(pos),pos,1);
         FarPrimeSigmaConstants.angle = angle;
         if (Objects.isNull(angle)) angle = visionHeading;
         else angle = Math.toRadians(angle);

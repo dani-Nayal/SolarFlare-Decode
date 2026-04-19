@@ -1,5 +1,8 @@
 package org.firstinspires.ftc.teamcode.vision.testing;
 
+import static org.firstinspires.ftc.teamcode.base.Components.initialize;
+import static org.firstinspires.ftc.teamcode.pedroPathing.Pedro.follower;
+
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.field.FieldManager;
 import com.bylazar.field.PanelsField;
@@ -14,6 +17,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
+import org.firstinspires.ftc.teamcode.pedroPathing.Pedro;
 import org.firstinspires.ftc.teamcode.robotconfigs.Inferno;
 import org.firstinspires.ftc.teamcode.vision.Vision;
 import org.firstinspires.ftc.teamcode.vision.Artifact;
@@ -29,27 +33,35 @@ public class TestMotifWithPanels extends OpMode {
     Pose3D cameraPose = new Pose3D(new Position(DistanceUnit.METER, 0.182, 0, 0.2225, 0), new YawPitchRollAngles(AngleUnit.DEGREES, 0, 0, 0, 0));
     FieldManager panelsField = PanelsField.INSTANCE.getField();
     TelemetryManager panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
-    Pose botPose = new Pose(0, 0, 0);
+    double robotWidth = 15;
+    double robotLength = 18;
+    Pose initPosePedro = new Pose(72, 144 - (robotLength / 2), Math.toRadians(270));
     @Override
     public void init(){
         vision = new Vision(hardwareMap, telemetry, cameraPose, Vision.CAMERA_ORIENTATION.NORMAL);
+
+        initialize(this, new Inferno(),false,true);
+        Pedro.createFollower(initPosePedro);
 
         panelsField.setOffsets(PanelsField.INSTANCE.getPresets().getPEDRO_PATHING());
     }
 
     @Override
     public void loop() {
+        follower.updatePose();
+
+        Pose botPose = follower.getPose();
 
         if (isBlueAlliance) alliance = Inferno.Alliance.BLUE;
         else alliance = Inferno.Alliance.RED;
 
-        List<Artifact> artifacts = vision.getClassifierArtifacts(vision.getArtifactDescriptors(botPose));
+        List<Artifact> classifierArtifacts = vision.getGroundAndClassifierArtifacts(botPose).get(0);
 
-        if (!artifacts.isEmpty()) {
+        if (!classifierArtifacts.isEmpty()){
 
-            List<String> colors = vision.getClassifierArtifactColors(artifacts, alliance);
+            List<String> colors = vision.getClassifierArtifactColors(classifierArtifacts, alliance);
 
-            double points = vision.getPatternPoints(colors, Vision.MOTIF.PPG);
+            Double points = vision.getPatternPoints(colors, Vision.MOTIF.PPG);
 
             panelsTelemetry.addData("colors", colors);
             telemetry.addData("colors", colors);
@@ -57,7 +69,7 @@ public class TestMotifWithPanels extends OpMode {
             panelsTelemetry.addData("points", points);
             telemetry.addData("points", points);
 
-            for (int i = 0; i < artifacts.size(); i++){
+            for (int i = 0; i < classifierArtifacts.size(); i++){
                 if (i == 0){
                     if (alliance == Inferno.Alliance.BLUE){
                         panelsField.setStyle(colors.get(0), colors.get(0), 0);
@@ -174,6 +186,11 @@ public class TestMotifWithPanels extends OpMode {
                 }
             }
         }
+        else {
+            telemetry.addLine("no classifier artifacts found");
+            panelsTelemetry.addLine("no classifier artifacts found");
+        }
+
         panelsField.update();
         panelsTelemetry.update();
         telemetry.update();

@@ -61,7 +61,7 @@ public class TestVisionWithPanels extends OpMode {
         Pose botPoseMT2 = vision.getBotPoseMT2(botPose);
         Pose botPoseMT2WithMT1 = vision.getBotPoseMT2WithMT1(botPose);
 
-        List<Artifact> artifacts = vision.getArtifactDescriptors(botPose);
+        List<Artifact> artifacts = vision.getArtifacts(botPose);
 
         if (!artifacts.isEmpty()) {
 

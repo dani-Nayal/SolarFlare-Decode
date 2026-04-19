@@ -86,7 +86,7 @@ public class Diagnostic extends LinearOpMode {
                         telemetry.addData("Heading", Math.toDegrees(follower.getPose().getHeading()));
                         telemetry.addData("Velocity", flywheel.get("flywheelLeft").getVelocity());
                         telemetry.addData("Ball Storage", Arrays.asList(ballStorage));
-                        telemetry.addData("Limelight Ball Count", vision.getArtifactDescriptors(follower.getPose()).size());
+                        telemetry.addData("Limelight Ball Count", vision.getArtifacts(follower.getPose()).size());
                     }
                 }
         );
