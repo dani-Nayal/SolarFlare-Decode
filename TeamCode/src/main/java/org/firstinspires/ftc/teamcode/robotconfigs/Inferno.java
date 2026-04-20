@@ -425,10 +425,30 @@ public class Inferno implements RobotConfig{
             new ContinuousCommand(()->{})
     );
     public static final Command setShooter = new ContinuousCommand(()->{
+            setTargetPoint();
+            Pose pos = follower.getPose();
+            double dist = Math.sqrt((targetPoint[0]-pos.getX())*(targetPoint[0]-pos.getX()) + (targetPoint[1]-pos.getY())*(targetPoint[1]-pos.getY()));
+            double newVel = Math.max(flywheel.get("flywheelLeft").getVelocity(), floor(targetFlywheelVelocity/20.0)*20.0 - 80);
+            targetFlywheelVelocity = VelRegression.regressFormula(dist);
+            targetFlywheelVelocity = Math.min(targetFlywheelVelocity,VelRegression.regressFormula(173.066461222));
+            turret[0] = (HoodRegression.regressFormula(dist,newVel) - TURRET_YAW_OFFSET)/TURRET_YAW_RATIO;
+            turret[1] = Math.toDegrees(Math.atan2(targetPoint[1] - pos.getY(),targetPoint[0] - pos.getX()));
+            double heading = Math.toDegrees(follower.getHeading());
+            turret[1] = turret[1]%360;
+            if ((turret[1]-heading)<=-180) turret[1] += 360;
+            else if ((turret[1]-heading)>=250) turret[1] -= 360;
+            hoodDesired = turret[0];
+            yawDesired = turret[1] - heading;
+            double turretFeedforward = Math.max(-50,Math.min(50,YAW_FEEDFORWARD*getTurretVelProjected()));
+            turretPitch.call((BotServo servo)->servo.setTarget(turret[0]*TURRET_PITCH_RATIO+TURRET_PITCH_OFFSET));
+            turretYaw.call(servo->servo.setTarget((turret[1]-heading)*TURRET_YAW_RATIO+TURRET_YAW_OFFSET+turretFeedforward));
+    });
+    /*
+    public static final Command setShooter = new ContinuousCommand(()->{
         setTargetPoint();
         Pose pos = follower.getPose();
         targetFlywheelVelocity = VelRegression.regressFormula(Math.sqrt((targetPoint[0]-pos.getX())*(targetPoint[0]-pos.getX()) + (targetPoint[1]-pos.getY())*(targetPoint[1]-pos.getY())));
-        //targetFlywheelVelocity = Math.min(Math.max(targetFlywheelVelocity,800*33.0/23),1500*33.0/23);
+        targetFlywheelVelocity = Math.min(targetFlywheelVelocity,VelRegression.regressFormula(173.066461222));
         if (robotState == RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT) {
             double startTime = timer.time();
             FisiksCache.runCachedPhysics();
@@ -459,6 +479,7 @@ public class Inferno implements RobotConfig{
         turretPitch.call((BotServo servo)->servo.setTarget(turret[0]*TURRET_PITCH_RATIO+TURRET_PITCH_OFFSET));
         turretYaw.call(servo->servo.setTarget((turret[1]-heading)*TURRET_YAW_RATIO+TURRET_YAW_OFFSET+turretFeedforward));
     });
+    */
     public static final Command stopAll = new ParallelCommand(
             sideRollers.command(servo->servo.setPowerCommand(0.0)),
             frontIntake.setPowerCommand("stopped"),
@@ -828,6 +849,24 @@ public class Inferno implements RobotConfig{
                 backIntakeCheck.run();
                 return backIntakeCheck.isBusy() && timer.time()-startTime<timeout;
             }
+        }
+    }
+    public abstract static class HoodRegression {
+        private static final double F = 173.65319699530275;
+        private static final double E = -6.67468298e-01;
+        private static final double D = 3.17168276e-02;
+        private static final double C = -7.81449753e-04;
+        private static final double B = 8.83503017e-04;
+        private static final double A = -7.16358067e-05;
+        private static final double F_MOT = 173.65319699530275;
+        private static final double E_MOT = -6.67468298e-01;
+        private static final double D_MOT = 3.17168276e-02;
+        private static final double C_MOT = -7.81449753e-04;
+        private static final double B_MOT = 8.83503017e-04;
+        private static final double A_MOT = -7.16358067e-05;
+        public static double regressFormula(double dist, double vel){
+            if (currentBallPath==BallPath.HIGH) return A_MOT*vel*vel+B_MOT*dist*vel+C_MOT*dist*dist+D_MOT*vel+E_MOT*dist+F_MOT;
+            else return A*vel*vel+B*dist*vel+C*dist*dist+D*vel+E*dist+F;
         }
     }
     public abstract static class MaxVelRegression{
