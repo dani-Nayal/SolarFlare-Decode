@@ -11,6 +11,7 @@ import static org.firstinspires.ftc.teamcode.robotconfigs.Fisiks.runPhysics;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Fisiks.success;
 
 import static java.lang.Math.floor;
+import static java.lang.Math.round;
 
 import org.apache.commons.lang3.tuple.Triple;
 
@@ -428,9 +429,11 @@ public class Inferno implements RobotConfig{
             Vector vel = follower.getVelocity();
             sotmVirtualTarget[0] = targetPoint[0]; sotmVirtualTarget[1] = targetPoint[1]; sotmVirtualTarget[2] = targetPoint[2];
             double dist = Math.sqrt((sotmVirtualTarget[0]-pos.getX())*(sotmVirtualTarget[0]-pos.getX()) + (sotmVirtualTarget[1]-pos.getY())*(sotmVirtualTarget[1]-pos.getY()));
-            double newVel = Math.max(flywheel.get("flywheelLeft").getVelocity(), floor(targetFlywheelVelocity/20.0)*20.0 - 60);
+            double newVel;
             targetFlywheelVelocity = VelRegression.regressFormula(dist);
             targetFlywheelVelocity = Math.min(targetFlywheelVelocity, VelRegression.regressFormula(173.066461222));
+            if (dist>135.532283977) newVel = Math.max(flywheel.get("flywheelLeft").getVelocity(), round(targetFlywheelVelocity/20.0)*20.0 - 100);
+            else newVel = targetFlywheelVelocity;
             if (useTurretSOTM){
                 for (int i=0;i<3;i++){
                     double shotTime = ShotTimeRegression.regressFormula(dist, newVel) + 0.3;
@@ -900,7 +903,7 @@ public class Inferno implements RobotConfig{
         if (alliance==Alliance.RED) targetPoint[0] = 141.5; else targetPoint[0] = 2.5;
         if (follower.getPose().getY()>=108) targetPoint[1] = 140; else targetPoint[1] = 141.5;
         if (shotType == ShotType.MOTIF && currentBallPath==BallPath.LOW) targetPoint[1]-=2;
-        if (follower.getPose().distanceFrom(new Pose(targetPoint[0],targetPoint[1]))>130) targetPoint[2] = 46; else targetPoint[2] = 46;
+        targetPoint[2] = 46;
         if (currentBallPath == BallPath.HIGH) targetPoint[2] = 34;
     }
     public static class Clamp extends ControlFunc<BotMotor>{
