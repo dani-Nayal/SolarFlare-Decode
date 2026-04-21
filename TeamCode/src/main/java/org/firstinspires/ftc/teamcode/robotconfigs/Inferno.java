@@ -438,7 +438,7 @@ public class Inferno implements RobotConfig{
                     dist = Math.sqrt((sotmVirtualTarget[0]-pos.getX())*(sotmVirtualTarget[0]-pos.getX()) + (sotmVirtualTarget[1]-pos.getY())*(sotmVirtualTarget[1]-pos.getY()));
                 }
             }
-            turret[0] = (HoodRegression.regressFormula(dist,newVel) - TURRET_YAW_OFFSET)/TURRET_YAW_RATIO;
+            turret[0] = (HoodRegression.regressFormula(dist,newVel) - TURRET_PITCH_OFFSET)/TURRET_PITCH_RATIO;
             turret[1] = Math.toDegrees(Math.atan2(sotmVirtualTarget[1] - pos.getY(), sotmVirtualTarget[0] - pos.getX()));
             double heading = Math.toDegrees(follower.getHeading());
             turret[1] = turret[1]%360;
