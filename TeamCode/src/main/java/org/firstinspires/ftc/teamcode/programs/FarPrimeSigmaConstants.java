@@ -97,9 +97,8 @@ public class FarPrimeSigmaConstants {
         poses.put("preloadShoot",new Pose(54.6,18.9,Math.toRadians(140)));
         poses.put("firstSpike",new Pose(21.1,35.2,Math.toRadians(140)));
         poses.put("firstShoot",new Pose(46.4, 13.3,Math.toRadians(180)));
-        poses.put("loadingZone",new Pose(9.9, 9.6,Math.toRadians(190)));
-        poses.put("secondShoot",new Pose(46.4, 13.3,Math.toRadians(180)));
-        poses.put("shoot",new Pose(54.7, 17.6,Math.toRadians(180)));
+        poses.put("loadingZone",new Pose(9.9, 9.6,Math.toRadians(180)));
+        poses.put("shoot",new Pose(54.7, 17.6,Math.toRadians(165)));
         poses.put("park",new Pose(40.7,17.6,Math.toRadians(180)));
     }
     public static Pose getPose(String input){if (alliance==Inferno.Alliance.BLUE) return poses.get(input); else return mirrorPose(Objects.requireNonNull(poses.get(input)));}
@@ -112,7 +111,10 @@ public class FarPrimeSigmaConstants {
             new SleepCommand(INITIAL_WAIT),
             new PedroCommand(b->
                 b.addPath(new BezierLine(getPose("start"),getPose("preloadShoot")))
-                        .setLinearHeadingInterpolation(getHeading("start"),getHeading("preloadShoot")),true),
+                        .setHeadingInterpolation(HeadingInterpolator.piecewise(
+                                new HeadingInterpolator.PiecewiseNode(0.0,0.6,HeadingInterpolator.constant(getHeading("start"))),
+                                new HeadingInterpolator.PiecewiseNode(0.6,0.7,HeadingInterpolator.linear(getHeading("start"),getHeading("preloadShoot")))
+                        )),true),
             shoot
     );
     public static Command firstSpike = new SequentialCommand(
@@ -121,7 +123,10 @@ public class FarPrimeSigmaConstants {
                             .setConstantHeadingInterpolation(getHeading("firstSpike"))
                             .addParametricCallback(slowDownT,()->follower.setMaxPower(slowDownAmount))
                         .addPath(new BezierLine(getPose("firstSpike"), getPose("firstShoot")))
-                            .setLinearHeadingInterpolation(getHeading("firstSpike"),getHeading("firstShoot"))
+                            .setHeadingInterpolation(HeadingInterpolator.piecewise(
+                                    new HeadingInterpolator.PiecewiseNode(0.0,0.6,HeadingInterpolator.tangent.reverse()),
+                                    new HeadingInterpolator.PiecewiseNode(0.6,0.7,HeadingInterpolator.linearFromPoint(()->follower.getHeading(), ()->getHeading("firstShoot"),0.7))
+                            ))
                             .addParametricCallback(speedUpT,()->follower.setMaxPower(1.0))
                             .addParametricCallback(stopIntakeT,()->setState(Inferno.RobotState.STOPPED).run()),
                     true
@@ -130,12 +135,17 @@ public class FarPrimeSigmaConstants {
     public static Command loadingZone = new SequentialCommand(
             new PedroCommand(
                     b->b.addPath(new BezierLine(getPose("firstShoot"), getPose("loadingZone")))
-                            .setLinearHeadingInterpolation(getHeading("firstShoot"),getHeading("loadingZone"))
+                            .setHeadingInterpolation(HeadingInterpolator.piecewise(
+                                    new HeadingInterpolator.PiecewiseNode(0.0,0.8,HeadingInterpolator.tangent),
+                                    new HeadingInterpolator.PiecewiseNode(0.8,1.0,HeadingInterpolator.linearFromPoint(()->follower.getHeading(), ()->getHeading("loadingZone"),1.0))
+                            ))
                             .addParametricCallback(slowDownT,()->follower.setMaxPower(slowDownAmount))
-                        .addPath(new BezierLine(getPose("loadingZone"), getPose("secondShoot")))
-                            .setHeadingInterpolation(
-                                    HeadingInterpolator.linear(getHeading("loadingZone"),getHeading("secondShoot"),0.7)
-                            )
+                        .addPath(new BezierLine(getPose("loadingZone"), getPose("shoot")))
+                            .setHeadingInterpolation(HeadingInterpolator.piecewise(
+                                    new HeadingInterpolator.PiecewiseNode(0.0,0.2,HeadingInterpolator.constant(getHeading("loadingZone"))),
+                                    new HeadingInterpolator.PiecewiseNode(0.2,0.7,HeadingInterpolator.tangent.reverse()),
+                                    new HeadingInterpolator.PiecewiseNode(0.7,0.8,HeadingInterpolator.linearFromPoint(()->follower.getHeading(), ()->getHeading("shoot"),0.8))
+                            ))
                             .addParametricCallback(speedUpT,()->follower.setMaxPower(1.0))
                             .addParametricCallback(stopIntakeT,()->setState(Inferno.RobotState.STOPPED).run()),
                     true
@@ -160,21 +170,30 @@ public class FarPrimeSigmaConstants {
                             new ConditionalCommand(
                                     new IfThen(()->!failsafe, new PedroCommand(
                                             b->{
+
                                                 Pose pos1 = getClusterPose(middleX,0);
                                                 return b.addPath(new BezierLine(follower::getPose,pos1))
-                                                            .setConstantHeadingInterpolation(visionHeading)
+                                                            .setTangentHeadingInterpolation()
                                                         .addPath(new BezierLine(()->pos1,()->getClusterPose(wallX,wallXOffset)))
+                                                            .setHeadingInterpolation(HeadingInterpolator.piecewise(
+                                                                    new HeadingInterpolator.PiecewiseNode(0.0,0.8,HeadingInterpolator.tangent),
+                                                                    new HeadingInterpolator.PiecewiseNode(0.8,1.0,HeadingInterpolator.linearFromPoint(()->follower.getHeading(), ()->visionHeading,1.0))
+                                                            ))
                                                             .addParametricCallback(slowDownT,()->follower.setMaxPower(slowDownAmount))
                                                             .addCallback(()->(follower.getChainIndex()==1&&timer.time()-firstPathStartTime>5),()->failsafe=true)
                                                         .addPath(new BezierLine(follower::getPose, getPose("shoot")))
-                                                            .setConstantHeadingInterpolation(visionHeading)
+                                                        .setHeadingInterpolation(HeadingInterpolator.piecewise(
+                                                                new HeadingInterpolator.PiecewiseNode(0.0,0.2,HeadingInterpolator.constant(visionHeading)),
+                                                                new HeadingInterpolator.PiecewiseNode(0.2,0.7,HeadingInterpolator.tangent.reverse()),
+                                                                new HeadingInterpolator.PiecewiseNode(0.7,0.8,HeadingInterpolator.linearFromPoint(()->follower.getHeading(), ()->getHeading("shoot"),0.8))
+                                                        ))
                                                             .addParametricCallback(speedUpT,()->follower.setMaxPower(1.0))
                                                             .addParametricCallback(stopIntakeT,()->setState(Inferno.RobotState.STOPPED).run());},
                                             true
                                     )),
                                     new IfThen(()->failsafe,new PedroCommand(
                                             b->b.addPath(new BezierLine(follower::getPose, getPose("shoot")))
-                                                    .setConstantHeadingInterpolation(visionHeading)
+                                                    .setConstantHeadingInterpolation(getHeading("shoot"))
                                                     .addParametricCallback(speedUpT,()->follower.setMaxPower(1.0))
                                                     .addParametricCallback(stopIntakeT,()->setState(Inferno.RobotState.STOPPED).run()),true
                                     ))

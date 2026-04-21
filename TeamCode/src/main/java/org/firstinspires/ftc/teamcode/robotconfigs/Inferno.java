@@ -9,7 +9,6 @@ import static org.firstinspires.ftc.teamcode.robotconfigs.Fisiks.Solver.out;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Fisiks.pitchTimeGuesses;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Fisiks.runPhysics;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Fisiks.success;
-import static org.firstinspires.ftc.teamcode.robotconfigs.Fisiks.yawBrackets;
 
 import static java.lang.Math.floor;
 
@@ -76,14 +75,13 @@ public class Inferno implements RobotConfig{
     public static VoltageSensor voltageSensor;
     public static final Supplier<Double> voltageSensorRead = new CachedReader<>(()->voltageSensor.getVoltage(), 100)::cachedRead;
     public static Vision vision;
-
-    public static Command autoGateIntake;
     public static final ArrayList<Supplier<Double[]>> colorSensorReads = new ArrayList<>();
     public static Color[] ballStorage = new Color[3];
     public static BallPath currentBallPath = BallPath.LOW;
     public static RobotState robotState = RobotState.STOPPED;
     public static ShotType shotType = ShotType.NORMAL;
     public static final double[] targetPoint = new double[3];
+    public static final double[] sotmVirtualTarget = new double[3];
     public static boolean motifShootAll = true;
     private final static double TRANSFER_SELECT_DELAY = 0.035;
     private final static double TRANSFER_REBOOST_DELAY = 0.093;
@@ -427,12 +425,21 @@ public class Inferno implements RobotConfig{
     public static final Command setShooter = new ContinuousCommand(()->{
             setTargetPoint();
             Pose pos = follower.getPose();
-            double dist = Math.sqrt((targetPoint[0]-pos.getX())*(targetPoint[0]-pos.getX()) + (targetPoint[1]-pos.getY())*(targetPoint[1]-pos.getY()));
+            Vector vel = follower.getVelocity();
+            sotmVirtualTarget[0] = targetPoint[0]; sotmVirtualTarget[1] = targetPoint[1]; sotmVirtualTarget[2] = targetPoint[2];
+            double dist = Math.sqrt((sotmVirtualTarget[0]-pos.getX())*(sotmVirtualTarget[0]-pos.getX()) + (sotmVirtualTarget[1]-pos.getY())*(sotmVirtualTarget[1]-pos.getY()));
             double newVel = Math.max(flywheel.get("flywheelLeft").getVelocity(), floor(targetFlywheelVelocity/20.0)*20.0 - 80);
             targetFlywheelVelocity = VelRegression.regressFormula(dist);
-            targetFlywheelVelocity = Math.min(targetFlywheelVelocity,VelRegression.regressFormula(173.066461222));
+            targetFlywheelVelocity = Math.min(targetFlywheelVelocity, VelRegression.regressFormula(173.066461222));
+            if (useTurretSOTM){
+                for (int i=0;i<3;i++){
+                    double shotTime = ShotTimeRegression.regressFormula(dist, newVel);
+                    sotmVirtualTarget[0] = targetPoint[0]-vel.getXComponent()*shotTime; sotmVirtualTarget[1] = targetPoint[1]-vel.getYComponent()*shotTime;
+                    dist = Math.sqrt((sotmVirtualTarget[0]-pos.getX())*(sotmVirtualTarget[0]-pos.getX()) + (sotmVirtualTarget[1]-pos.getY())*(sotmVirtualTarget[1]-pos.getY()));
+                }
+            }
             turret[0] = (HoodRegression.regressFormula(dist,newVel) - TURRET_YAW_OFFSET)/TURRET_YAW_RATIO;
-            turret[1] = Math.toDegrees(Math.atan2(targetPoint[1] - pos.getY(),targetPoint[0] - pos.getX()));
+            turret[1] = Math.toDegrees(Math.atan2(sotmVirtualTarget[1] - pos.getY(), sotmVirtualTarget[0] - pos.getX()));
             double heading = Math.toDegrees(follower.getHeading());
             turret[1] = turret[1]%360;
             if ((turret[1]-heading)<=-180) turret[1] += 360;
@@ -850,6 +857,9 @@ public class Inferno implements RobotConfig{
                 return backIntakeCheck.isBusy() && timer.time()-startTime<timeout;
             }
         }
+    }
+    public abstract static class ShotTimeRegression {
+        public static double regressFormula(double dist, double vel){return 0;}
     }
     public abstract static class HoodRegression {
         private static final double F = 173.65319699530275;
