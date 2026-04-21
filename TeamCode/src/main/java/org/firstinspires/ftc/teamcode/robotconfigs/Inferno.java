@@ -867,13 +867,13 @@ public class Inferno implements RobotConfig{
         private static final double D = 1.30175149e-01;
         private static final double C = -5.84382880e-03;
         private static final double B = 2.06813664e-03;
-        private static final double A = -1.41957780e-045;
+        private static final double A = -1.41957780e-04;
         private static final double F_MOT = 138.90420128211804;
         private static final double E_MOT = -1.48357985e+00;
         private static final double D_MOT = 1.30175149e-01;
         private static final double C_MOT = -5.84382880e-03;
         private static final double B_MOT = 2.06813664e-03;
-        private static final double A_MOT = -1.41957780e-045;
+        private static final double A_MOT = -1.41957780e-04;
         public static double regressFormula(double dist, double vel){
             if (currentBallPath==BallPath.HIGH) return A_MOT*vel*vel+B_MOT*dist*vel+C_MOT*dist*dist+D_MOT*vel+E_MOT*dist+F_MOT;
             else return A*vel*vel+B*dist*vel+C*dist*dist+D*vel+E*dist+F;
