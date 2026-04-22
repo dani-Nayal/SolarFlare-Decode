@@ -357,9 +357,9 @@ public class Inferno implements RobotConfig{
                             )
                     )
             ),
-            new SleepCommand(0.27),
+            new SleepCommand(0.35),
             transferGate.instantSetTargetCommand("open"),
-            new SleepCommand(0.05),
+            new SleepCommand(0.09),
             new ParallelCommand(
                     sideRollers.command(servo->servo.setPowerCommand(0.0)),
                     frontIntake.setPowerCommand("stopped"),
