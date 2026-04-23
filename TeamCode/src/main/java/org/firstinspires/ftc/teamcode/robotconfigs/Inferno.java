@@ -142,6 +142,8 @@ public class Inferno implements RobotConfig{
                 entry = new Pose(pos.getX() + (-pos.getY()-pos.getX()+96)/2, pos.getY() + (-pos.getY()-pos.getX()+96)/2);
             }
         }
+        if (entry.getY()<9.75 && entry.getX()<=72) entry = new Pose(9.75+24,9.75);
+        else if (entry.getY()<9.75 && entry.getX()>72) entry = new Pose(96-9.75,9.75);
         double angle = Math.atan2(pos.getY()-entry.getY(),pos.getX()-entry.getX());
         return new Pose(
                 entry.getX() + Math.cos(angle)*7.75,
