@@ -153,14 +153,16 @@ public class ClosePrimeSigmaConstants {
                 .addParametricCallback(secondShootSlowT,()->follower.setMaxPower(shootSlowAmount))
                 .addParametricCallback(0.93,()->follower.setMaxPower(1.0)), true), shoot);
     public static Command gate = new SequentialCommand(new PedroCommand(
-            (PathBuilder b)->b.addPath(
-                    new BezierLine(
-                            follower::getPose,
-                            getPose("gateOpen")
-                    )
-                    ).setConstantHeadingInterpolation(getHeading("gateOpen")),
-            true).setTimeout(2),
-            setState(Inferno.RobotState.INTAKE_FRONT),
+                (PathBuilder b)->b.addPath(
+                        new BezierLine(
+                                follower::getPose,
+                                getPose("gateOpen")
+                        )
+                ).setHeadingInterpolation(HeadingInterpolator.piecewise(
+                        new HeadingInterpolator.PiecewiseNode(0.0,0.8,HeadingInterpolator.tangent),
+                        new HeadingInterpolator.PiecewiseNode(0.8,0.9,HeadingInterpolator.linearFromPoint(()->follower.getHeading(), ()->getHeading("gateOpen"),0.9))
+                )),
+    true).setTimeout(2),
             new Inferno.CheckFull(gateIntakeTimeout),
             new PedroCommand(
                     (PathBuilder b)->b.addPath(
@@ -173,7 +175,8 @@ public class ClosePrimeSigmaConstants {
                             .addParametricCallback(stopIntakeT,()->setState(Inferno.RobotState.STOPPED).run())
                             .addParametricCallback(shootSlowT,()->follower.setMaxPower(shootSlowAmount))
                             .addParametricCallback(0.93,()->follower.setMaxPower(1.0)),
-                    true), shoot);
+    true), shoot
+    );
     public static Command firstSpike = new SequentialCommand(
             new PedroCommand((PathBuilder b)->b
                     .addPath(

@@ -7,6 +7,8 @@ import static org.firstinspires.ftc.teamcode.pedroPathing.Pedro.follower;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_PITCH_OFFSET;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_PITCH_RATIO;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.YAW_FIGHT;
+import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.autoGateIntake;
+import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.autoShoot;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.ballStorage;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.classifierBallCount;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.findMotif;
@@ -110,6 +112,7 @@ public class DecodeTeleOp extends LinearOpMode {
         breakFollowing();
         Command aprilTag = new AprilTagRelocalize();
         PressCommand pressCommand = new PressCommand(
+                new IfThen(()->gamepad2.dpad_left,setState(RobotState.EXPEL)),
                 new IfThen(()->gamepad2.dpad_right,toggleShotType()),
                 new IfThen(()->gamepad2.x,new InstantCommand(()->classifierBallCount=0)),
                 new IfThen(()->gamepad2.a,new InstantCommand(()->{if (classifierBallCount<9) {classifierBallCount+=1;}})),
@@ -127,7 +130,8 @@ public class DecodeTeleOp extends LinearOpMode {
                                 new IfThen(()->gamepad1.left_trigger>0.5, setState(RobotState.STOPPED)),
                                 new IfThen(()->gamepad1.b, setState(RobotState.INTAKE_FRONT_AND_SHOOT)),
                                 new IfThen(()->gamepad1.x, setState(RobotState.INTAKE_BACK_AND_SHOOT)),
-                                new IfThen(()->gamepad1.a, setState(RobotState.EXPEL))
+                                new IfThen(()->gamepad1.a, autoGateIntake),
+                                new IfThen(()->gamepad1.y, autoShoot)
                         ),
                         pressCommand,
                         Commands.triggeredToggleCommand(()->gamepad2.left_stick_button,new ContinuousCommand(()->{}),panic),

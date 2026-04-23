@@ -10,13 +10,17 @@ import static org.firstinspires.ftc.teamcode.robotconfigs.Fisiks.pitchTimeGuesse
 import static org.firstinspires.ftc.teamcode.robotconfigs.Fisiks.runPhysics;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Fisiks.success;
 
+import static java.lang.Math.cos;
 import static java.lang.Math.floor;
 import static java.lang.Math.round;
 
 import org.apache.commons.lang3.tuple.Triple;
 
+import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.math.Vector;
+import com.pedropathing.paths.HeadingInterpolator;
+import com.pedropathing.paths.PathBuilder;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -28,7 +32,9 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 import org.firstinspires.ftc.teamcode.base.Commands.*;
 import org.firstinspires.ftc.teamcode.base.Components;
 import org.firstinspires.ftc.teamcode.base.Components.*;
+import org.firstinspires.ftc.teamcode.pedroPathing.Pedro;
 import org.firstinspires.ftc.teamcode.presets.PresetControl.*;
+import org.firstinspires.ftc.teamcode.programs.ClosePrimeSigmaConstants;
 import org.firstinspires.ftc.teamcode.vision.Vision;
 import static org.apache.commons.math3.util.FastMath.log;
 
@@ -102,6 +108,63 @@ public class Inferno implements RobotConfig{
     public final static double[] turret = new double[2];
     public static Pose relocalizePose;
     public static boolean useTurretSOTM = true;
+    public static Command autoGateIntake = new ParallelCommand(
+            setState(RobotState.INTAKE_FRONT),
+            new Pedro.PedroCommand(
+                    (PathBuilder b)->b.addPath(
+                            new BezierLine(
+                                    follower::getPose,
+                                    ClosePrimeSigmaConstants.getPose("gateOpen")
+                            )
+                    ).setHeadingInterpolation(HeadingInterpolator.piecewise(
+                            new HeadingInterpolator.PiecewiseNode(0.0,0.8,HeadingInterpolator.tangent),
+                            new HeadingInterpolator.PiecewiseNode(0.8,0.9,HeadingInterpolator.linearFromPoint(()->follower.getHeading(), ()->ClosePrimeSigmaConstants.getHeading("gateOpen"),0.9))
+                    )),
+            false).setTimeout(3)
+    );
+    public static Pose getClosestShootPose(){
+        Pose pos = follower.getPose();
+        Pose entry = new Pose(0,0,0);
+        if (pos.getY()>48){
+            if (pos.getY()<=pos.getX() && pos.getY()<=144-pos.getX()){
+                entry = new Pose(72,72);
+            } else if (pos.getX()<=72) {
+                entry = new Pose(pos.getX() + (-pos.getX()-pos.getY()+144)/2, pos.getY() + (-pos.getX()-pos.getY()+144)/2);
+            } else if (pos.getX()>72){
+                entry = new Pose(pos.getX() - (pos.getX()-pos.getY())/2, pos.getY() + (pos.getX()-pos.getY())/2);
+            }
+        } else {
+            if (pos.getY()>=pos.getX()-48 && pos.getY()>=86-pos.getX()){
+                entry = new Pose(72,24);
+            } else if (pos.getX()<=72) {
+                entry = new Pose(pos.getX() - (pos.getX()-pos.getY()-48)/2, pos.getY() + (pos.getX()-pos.getY()-48)/2);
+            } else if (pos.getX()>72){
+                entry = new Pose(pos.getX() + (-pos.getY()-pos.getX()+96)/2, pos.getY() + (-pos.getY()-pos.getX()+96)/2);
+            }
+        }
+        double angle = Math.atan2(pos.getY()-entry.getY(),pos.getX()-entry.getX());
+        return new Pose(
+                entry.getX() + Math.cos(angle)*7.75,
+                entry.getY() + Math.sin(angle)*7.75
+        );
+    }
+    public static Command autoShoot = new SequentialCommand(
+            setState(RobotState.STOPPED),
+            new Pedro.PedroInstantCommand(
+                    (PathBuilder b)->{
+                        HeadingInterpolator headingInterpolator = HeadingInterpolator.tangent;
+                        Pose target = getClosestShootPose();
+                        if (cos(Math.atan2(target.getY()-follower.getPose().getY(),target.getX()-follower.getPose().getX()) - follower.getHeading())<0) headingInterpolator = headingInterpolator.reverse();
+                        return b.addPath(
+                            new BezierLine(
+                                    follower::getPose,
+                                    target
+                            )
+                    ).setHeadingInterpolation(headingInterpolator);},
+                    false),
+            new SleepUntilTrue(()->Pedro.follower.getCurrentTValue()>=0.95),
+            setState(RobotState.SHOOTING)
+    );
     public static void initTurretYawPosition(){
         leftFront.resetEncoder();
         ENCODER_OFFSET = (turretYaw.get("turretYawTop").getTargetMinusOffset()-TURRET_YAW_OFFSET)/TURRET_YAW_RATIO;
@@ -429,11 +492,13 @@ public class Inferno implements RobotConfig{
             Vector vel = follower.getVelocity();
             sotmVirtualTarget[0] = targetPoint[0]; sotmVirtualTarget[1] = targetPoint[1]; sotmVirtualTarget[2] = targetPoint[2];
             double dist = Math.sqrt((sotmVirtualTarget[0]-pos.getX())*(sotmVirtualTarget[0]-pos.getX()) + (sotmVirtualTarget[1]-pos.getY())*(sotmVirtualTarget[1]-pos.getY()));
-            double newVel;
+            double newVel = targetFlywheelVelocity;
             targetFlywheelVelocity = VelRegression.regressFormula(dist);
             targetFlywheelVelocity = Math.min(targetFlywheelVelocity, VelRegression.regressFormula(173.066461222));
+            /*
             if (dist>135.532283977) newVel = Math.max(flywheel.get("flywheelLeft").getVelocity(), round(targetFlywheelVelocity/20.0)*20.0 - 100);
             else newVel = targetFlywheelVelocity;
+            */
             if (useTurretSOTM){
                 for (int i=0;i<3;i++){
                     double shotTime = ShotTimeRegression.regressFormula(dist, newVel) + 0.3;
