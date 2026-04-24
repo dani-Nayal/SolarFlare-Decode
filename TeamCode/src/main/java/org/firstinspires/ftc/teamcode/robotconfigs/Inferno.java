@@ -106,6 +106,8 @@ public class Inferno implements RobotConfig{
     public final static double[] turret = new double[2];
     public static Pose relocalizePose;
     public static boolean useTurretSOTM = true;
+    public static double sotmOffset;
+    public static double prevSotmOffset;
     public static Command autoGateIntake = new ParallelCommand(
             setState(RobotState.INTAKE_FRONT),
             new Pedro.PedroCommand(
@@ -190,7 +192,8 @@ public class Inferno implements RobotConfig{
         double sideY = 1 / distance * (targetPoint[0] - pos.getX());
         double movementPart = Math.toDegrees(-(sideX*vel.getXComponent() + sideY*vel.getYComponent())/distance);
         double angularPart = -Math.toDegrees(follower.getAngularVelocity());
-        return movementPart+angularPart;
+        double sotmPart = sotmOffset-prevSotmOffset;
+        return movementPart+angularPart+sotmPart;
     }
 
     static {
@@ -504,6 +507,7 @@ public class Inferno implements RobotConfig{
             }
             turret[0] = (HoodRegression.regressFormula(dist,newVel) - TURRET_PITCH_OFFSET)/TURRET_PITCH_RATIO;
             turret[1] = Math.toDegrees(Math.atan2(sotmVirtualTarget[1] - pos.getY(), sotmVirtualTarget[0] - pos.getX()));
+            sotmOffset = turret[1] - Math.toDegrees(Math.atan2(targetPoint[1] - pos.getY(), targetPoint[0] - pos.getX()));
             double heading = Math.toDegrees(follower.getHeading());
             turret[1] = turret[1]%360;
             if ((turret[1]-heading)<=-180) turret[1] += 360;
@@ -513,6 +517,7 @@ public class Inferno implements RobotConfig{
             double turretFeedforward = Math.max(-50,Math.min(50,YAW_FEEDFORWARD*getTurretVelProjected()));
             turretPitch.call((BotServo servo)->servo.setTarget(turret[0]*TURRET_PITCH_RATIO+TURRET_PITCH_OFFSET));
             turretYaw.call(servo->servo.setTarget((turret[1]-heading)*TURRET_YAW_RATIO+TURRET_YAW_OFFSET+turretFeedforward));
+            prevSotmOffset = sotmOffset;
     });
     /*
     public static final Command setShooter = new ContinuousCommand(()->{
@@ -924,7 +929,13 @@ public class Inferno implements RobotConfig{
         }
     }
     public abstract static class ShotTimeRegression {
-        public static double regressFormula(double dist, double vel){return 0;}
+        private static final double F = -1.4971016190176396;
+        private static final double E = -1.29510092e-02;
+        private static final double D = 4.24774794e-03;
+        private static final double C = -5.23742019e-05;
+        private static final double B = 2.09296358e-05;
+        private static final double A = -2.53159952e-06;
+        public static double regressFormula(double dist, double vel){return A*vel*vel+B*dist*vel+C*dist*dist+D*vel+E*dist+F;}
     }
     public abstract static class HoodRegression {
         private static final double F = -876.7214677923611;
