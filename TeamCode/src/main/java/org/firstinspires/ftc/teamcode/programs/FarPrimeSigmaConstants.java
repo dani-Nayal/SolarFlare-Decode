@@ -113,7 +113,7 @@ public class FarPrimeSigmaConstants {
                 b.addPath(new BezierLine(getPose("start"),getPose("preloadShoot")))
                         .setHeadingInterpolation(HeadingInterpolator.piecewise(
                                 new HeadingInterpolator.PiecewiseNode(0.0,0.6,HeadingInterpolator.constant(getHeading("start"))),
-                                new HeadingInterpolator.PiecewiseNode(0.6,0.7,HeadingInterpolator.linear(getHeading("start"),getHeading("preloadShoot")))
+                                HeadingInterpolator.PiecewiseNode.linear(0.6,0.7, getHeading("start"), getHeading("preloadShoot"))
                         )),true),
             shoot
     );
@@ -125,7 +125,7 @@ public class FarPrimeSigmaConstants {
                         .addPath(new BezierLine(getPose("firstSpike"), getPose("firstShoot")))
                             .setHeadingInterpolation(HeadingInterpolator.piecewise(
                                     new HeadingInterpolator.PiecewiseNode(0.0,0.6,HeadingInterpolator.tangent.reverse()),
-                                    new HeadingInterpolator.PiecewiseNode(0.6,0.7,HeadingInterpolator.linearFromPoint(()->follower.getHeading(), ()->getHeading("firstShoot"),0.7))
+                                    HeadingInterpolator.PiecewiseNode.linear(0.5,0.6, Math.atan2(getPose("firstSpike").getY() - getPose("firstShoot").getY(), getPose("firstSpike").getX() - getPose("firstShoot").getX()), getHeading("firstShoot"))
                             ))
                             .addParametricCallback(speedUpT,()->follower.setMaxPower(1.0))
                             .addParametricCallback(stopIntakeT,()->setState(Inferno.RobotState.STOPPED).run()),
@@ -136,15 +136,15 @@ public class FarPrimeSigmaConstants {
             new PedroCommand(
                     b->b.addPath(new BezierLine(getPose("firstShoot"), getPose("loadingZone")))
                             .setHeadingInterpolation(HeadingInterpolator.piecewise(
-                                    new HeadingInterpolator.PiecewiseNode(0.0,0.8,HeadingInterpolator.tangent),
-                                    new HeadingInterpolator.PiecewiseNode(0.8,1.0,HeadingInterpolator.linearFromPoint(()->follower.getHeading(), ()->getHeading("loadingZone"),1.0))
+                                    new HeadingInterpolator.PiecewiseNode(0.0,0.7,HeadingInterpolator.tangent),
+                                    HeadingInterpolator.PiecewiseNode.linear(0.7,0.9, Math.atan2(getPose("loadingZone").getY() - getPose("firstShoot").getY(), getPose("loadingZone").getX() - getPose("firstShoot").getX()), getHeading("loadingZone"))
                             ))
                             .addParametricCallback(slowDownT,()->follower.setMaxPower(slowDownAmount))
                         .addPath(new BezierLine(getPose("loadingZone"), getPose("shoot")))
                             .setHeadingInterpolation(HeadingInterpolator.piecewise(
-                                    new HeadingInterpolator.PiecewiseNode(0.0,0.2,HeadingInterpolator.constant(getHeading("loadingZone"))),
-                                    new HeadingInterpolator.PiecewiseNode(0.2,0.7,HeadingInterpolator.tangent.reverse()),
-                                    new HeadingInterpolator.PiecewiseNode(0.7,0.8,HeadingInterpolator.linearFromPoint(()->follower.getHeading(), ()->getHeading("shoot"),0.8))
+                                    new HeadingInterpolator.PiecewiseNode(0.0,0.15,HeadingInterpolator.constant(getHeading("loadingZone"))),
+                                    new HeadingInterpolator.PiecewiseNode(0.2,0.6,HeadingInterpolator.tangent.reverse()),
+                                    HeadingInterpolator.PiecewiseNode.linear(0.6,0.7, Math.atan2(getPose("loadingZone").getY() - getPose("firstShoot").getY(), getPose("loadingZone").getX() - getPose("firstShoot").getX()), getHeading("shoot"))
                             ))
                             .addParametricCallback(speedUpT,()->follower.setMaxPower(1.0))
                             .addParametricCallback(stopIntakeT,()->setState(Inferno.RobotState.STOPPED).run()),
@@ -177,15 +177,15 @@ public class FarPrimeSigmaConstants {
                                                         .addPath(new BezierLine(()->pos1,()->getClusterPose(wallX,wallXOffset)))
                                                             .setHeadingInterpolation(HeadingInterpolator.piecewise(
                                                                     new HeadingInterpolator.PiecewiseNode(0.0,0.8,HeadingInterpolator.tangent),
-                                                                    new HeadingInterpolator.PiecewiseNode(0.8,1.0,HeadingInterpolator.linearFromPoint(()->follower.getHeading(), ()->visionHeading,1.0))
+                                                                    new HeadingInterpolator.PiecewiseNode(0.8,1.0,HeadingInterpolator.constant(visionHeading))
                                                             ))
                                                             .addParametricCallback(slowDownT,()->follower.setMaxPower(slowDownAmount))
                                                             .addCallback(()->(follower.getChainIndex()==1&&timer.time()-firstPathStartTime>5),()->failsafe=true)
                                                         .addPath(new BezierLine(follower::getPose, getPose("shoot")))
                                                         .setHeadingInterpolation(HeadingInterpolator.piecewise(
                                                                 new HeadingInterpolator.PiecewiseNode(0.0,0.2,HeadingInterpolator.constant(visionHeading)),
-                                                                new HeadingInterpolator.PiecewiseNode(0.2,0.7,HeadingInterpolator.tangent.reverse()),
-                                                                new HeadingInterpolator.PiecewiseNode(0.7,0.8,HeadingInterpolator.linearFromPoint(()->follower.getHeading(), ()->getHeading("shoot"),0.8))
+                                                                new HeadingInterpolator.PiecewiseNode(0.2,0.6,HeadingInterpolator.tangent.reverse()),
+                                                                new HeadingInterpolator.PiecewiseNode(0.6,0.7,HeadingInterpolator.linearFromPoint(()->follower.getHeading(), ()->getHeading("shoot"),0.8))
                                                         ))
                                                             .addParametricCallback(speedUpT,()->follower.setMaxPower(1.0))
                                                             .addParametricCallback(stopIntakeT,()->setState(Inferno.RobotState.STOPPED).run());},
