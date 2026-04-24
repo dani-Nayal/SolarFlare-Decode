@@ -493,6 +493,7 @@ public class Inferno implements RobotConfig{
             setTargetPoint();
             Pose pos = follower.getPose();
             Vector vel = follower.getVelocity();
+            double actualVel = flywheel.get("flywheelLeft").getVelocity();
             sotmVirtualTarget[0] = targetPoint[0]; sotmVirtualTarget[1] = targetPoint[1]; sotmVirtualTarget[2] = targetPoint[2];
             double dist = Math.sqrt((sotmVirtualTarget[0]-pos.getX())*(sotmVirtualTarget[0]-pos.getX()) + (sotmVirtualTarget[1]-pos.getY())*(sotmVirtualTarget[1]-pos.getY()));
             double newVel = targetFlywheelVelocity;
@@ -500,12 +501,12 @@ public class Inferno implements RobotConfig{
             targetFlywheelVelocity = Math.min(targetFlywheelVelocity, VelRegression.regressFormula(173.066461222));
             if (useTurretSOTM){
                 for (int i=0;i<5;i++){
-                    double shotTime = ShotTimeRegression.regressFormula(dist, newVel);
+                    double shotTime = ShotTimeRegression.regressFormula(dist, actualVel);
                     sotmVirtualTarget[0] = targetPoint[0]-vel.getXComponent()*shotTime; sotmVirtualTarget[1] = targetPoint[1]-vel.getYComponent()*shotTime;
                     dist = Math.sqrt((sotmVirtualTarget[0]-pos.getX())*(sotmVirtualTarget[0]-pos.getX()) + (sotmVirtualTarget[1]-pos.getY())*(sotmVirtualTarget[1]-pos.getY()));
                 }
             }
-            turret[0] = (HoodRegression.regressFormula(dist,newVel) - TURRET_PITCH_OFFSET)/TURRET_PITCH_RATIO;
+            if (useTurretSOTM&&vel.getMagnitude()>0.2) turret[0] = (HoodRegression.regressFormula(dist,actualVel) - TURRET_PITCH_OFFSET)/TURRET_PITCH_RATIO; else turret[0] = (HoodRegression.regressFormula(dist,newVel) - TURRET_PITCH_OFFSET)/TURRET_PITCH_RATIO;
             turret[1] = Math.toDegrees(Math.atan2(sotmVirtualTarget[1] - pos.getY(), sotmVirtualTarget[0] - pos.getX()));
             sotmOffset = turret[1] - Math.toDegrees(Math.atan2(targetPoint[1] - pos.getY(), targetPoint[0] - pos.getX()));
             double heading = Math.toDegrees(follower.getHeading());

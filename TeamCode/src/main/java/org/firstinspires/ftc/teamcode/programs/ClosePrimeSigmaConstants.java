@@ -159,8 +159,8 @@ public class ClosePrimeSigmaConstants {
                                 getPose("gateOpen")
                         )
                 ).setHeadingInterpolation(HeadingInterpolator.piecewise(
-                        new HeadingInterpolator.PiecewiseNode(0.0,0.65,HeadingInterpolator.tangent),
-                        HeadingInterpolator.PiecewiseNode.linear(0.65,0.75, Math.atan2(getPose("gateOpen").getY() - getPose("shoot").getY(), getPose("gateOpen").getX() - getPose("shoot").getX()), getHeading("gateOpen"))
+                        new HeadingInterpolator.PiecewiseNode(0.0,0.5,HeadingInterpolator.tangent),
+                        HeadingInterpolator.PiecewiseNode.linear(0.5,0.6, Math.atan2(getPose("gateOpen").getY() - getPose("shoot").getY(), getPose("gateOpen").getX() - getPose("shoot").getX()), getHeading("gateOpen"))
                 )),
     true).setTimeout(2),
             new Inferno.CheckFull(gateIntakeTimeout),
@@ -171,7 +171,11 @@ public class ClosePrimeSigmaConstants {
                                             getPose("shoot")
                                     )
                             )
-                            .setHeadingInterpolation(HeadingInterpolator.linear(getHeading("gateOpen"), getHeading("shoot"),0.2))
+                            .setHeadingInterpolation(HeadingInterpolator.piecewise(
+                                    HeadingInterpolator.PiecewiseNode.linear(0.0, 0.15, getHeading("gateOpen"), getHeading("shoot")),
+                                    new HeadingInterpolator.PiecewiseNode(0.15,0.5,HeadingInterpolator.tangent.reverse()),
+                                    HeadingInterpolator.PiecewiseNode.linear(0.5,0.6, Math.atan2(getPose("gateOpen").getY() - getPose("shoot").getY(), getPose("gateOpen").getX() - getPose("shoot").getX()), getHeading("shoot"))
+                            ))
                             .addParametricCallback(stopIntakeT,()->setState(Inferno.RobotState.STOPPED).run())
                             .addParametricCallback(shootSlowT,()->follower.setMaxPower(shootSlowAmount))
                             .addParametricCallback(0.93,()->follower.setMaxPower(1.0)),
