@@ -308,7 +308,6 @@ public class FarPrimeSigmaConstants {
                     new InstantCommand(
                             ()->{if (flag==0) targetFlywheelVelocity = Inferno.VelRegression.regressFormula(getPose("preloadShoot").distanceFrom(new Pose(targetPoint[0],targetPoint[1])));
                                 else if (flag==1) targetFlywheelVelocity = Inferno.VelRegression.regressFormula(getPose("firstShoot").distanceFrom(new Pose(targetPoint[0],targetPoint[1])));
-                                else if (flag==2) targetFlywheelVelocity = Inferno.VelRegression.regressFormula(getPose("secondShoot").distanceFrom(new Pose(targetPoint[0],targetPoint[1])));
                                 else targetFlywheelVelocity = Inferno.VelRegression.regressFormula(getPose("shoot").distanceFrom(new Pose(targetPoint[0],targetPoint[1])));}
                     )
                 )

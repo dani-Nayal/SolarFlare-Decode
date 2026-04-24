@@ -407,8 +407,8 @@ public class Inferno implements RobotConfig{
                     new IfThen(
                             ()->prevIntake==RobotState.INTAKE_BACK,
                             new ParallelCommand(
-                                    frontIntakeGate.instantSetTargetCommand("closed"),
-                                    backIntakeGate.instantSetTargetCommand("closed"),
+                                    frontIntakeGate.instantSetTargetCommand("backoff"),
+                                    backIntakeGate.instantSetTargetCommand("backoff"),
                                     frontIntake.setPowerCommand("frontDrive"),
                                     backIntake.setPowerCommand("otherFrontDrive")
                             )
@@ -416,16 +416,16 @@ public class Inferno implements RobotConfig{
                     new IfThen(
                             ()->prevIntake==RobotState.INTAKE_FRONT,
                             new ParallelCommand(
-                                    frontIntakeGate.instantSetTargetCommand("closed"),
-                                    backIntakeGate.instantSetTargetCommand("closed"),
+                                    frontIntakeGate.instantSetTargetCommand("backoff"),
+                                    backIntakeGate.instantSetTargetCommand("backoff"),
                                     frontIntake.setPowerCommand("otherFrontDrive"),
                                     backIntake.setPowerCommand("frontDrive")
                             )
                     )
             ),
-            new SleepCommand(0.4),
+            new SleepCommand(0.35),
             transferGate.instantSetTargetCommand("open"),
-            new SleepCommand(0.07),
+            new SleepCommand(0.09),
             new ParallelCommand(
                     sideRollers.command(servo->servo.setPowerCommand(0.0)),
                     frontIntake.setPowerCommand("stopped"),
@@ -499,7 +499,7 @@ public class Inferno implements RobotConfig{
             targetFlywheelVelocity = VelRegression.regressFormula(dist);
             targetFlywheelVelocity = Math.min(targetFlywheelVelocity, VelRegression.regressFormula(173.066461222));
             if (useTurretSOTM){
-                for (int i=0;i<3;i++){
+                for (int i=0;i<5;i++){
                     double shotTime = ShotTimeRegression.regressFormula(dist, newVel);
                     sotmVirtualTarget[0] = targetPoint[0]-vel.getXComponent()*shotTime; sotmVirtualTarget[1] = targetPoint[1]-vel.getYComponent()*shotTime;
                     dist = Math.sqrt((sotmVirtualTarget[0]-pos.getX())*(sotmVirtualTarget[0]-pos.getX()) + (sotmVirtualTarget[1]-pos.getY())*(sotmVirtualTarget[1]-pos.getY()));
@@ -963,10 +963,10 @@ public class Inferno implements RobotConfig{
         }
     }
     public abstract static class VelRegression {
-        private static final double M = 6.38110593;
-        private static final double B = 799.7365903563333;
-        private static final double M_MOTIF = 6.38110593;
-        private static final double B_MOTIF = 799.7365903563333;
+        private static final double M = 7.08110593;
+        private static final double B = 728.460226813;
+        private static final double M_MOTIF = 7.08110593;
+        private static final double B_MOTIF = 728.460226813;
         public static double regressFormula(double dist){
             if (shotType == ShotType.NORMAL) return (M *dist+ B);
             else return (M_MOTIF *dist+ B_MOTIF);

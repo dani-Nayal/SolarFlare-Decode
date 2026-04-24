@@ -111,7 +111,7 @@ public class ClosePrimeSigmaConstants {
         poses.put("shoot",new Pose(SHOOT[0],SHOOT[1],SHOOT[2]));
         poses.put("secondSpikeCtrl",new Pose(41.07, 58.06));
         poses.put("secondSpike",new Pose(18.829, 58.805));
-        poses.put("gateOpen",new Pose(16, 58,Math.toRadians(170)));
+        poses.put("gateOpen",new Pose(17, 60.5,Math.toRadians(160)));
         poses.put("firstSpike",new Pose(22.773, 81,Math.toRadians(180)));
         poses.put("thirdSpikeCtrl",new Pose(80.067, 27.483));
         poses.put("thirdSpike",new Pose(13.504, 41.131,Math.toRadians(180)));
@@ -159,8 +159,8 @@ public class ClosePrimeSigmaConstants {
                                 getPose("gateOpen")
                         )
                 ).setHeadingInterpolation(HeadingInterpolator.piecewise(
-                        new HeadingInterpolator.PiecewiseNode(0.0,0.8,HeadingInterpolator.tangent),
-                        new HeadingInterpolator.PiecewiseNode(0.8,0.9,HeadingInterpolator.linearFromPoint(()->follower.getHeading(), ()->getHeading("gateOpen"),0.9))
+                        new HeadingInterpolator.PiecewiseNode(0.0,0.65,HeadingInterpolator.tangent),
+                        HeadingInterpolator.PiecewiseNode.linear(0.65,0.75, Math.atan2(getPose("gateOpen").getY() - getPose("shoot").getY(), getPose("gateOpen").getX() - getPose("shoot").getX()), getHeading("gateOpen"))
                 )),
     true).setTimeout(2),
             new Inferno.CheckFull(gateIntakeTimeout),
