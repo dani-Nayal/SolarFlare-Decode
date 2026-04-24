@@ -6,7 +6,6 @@ import static org.firstinspires.ftc.teamcode.base.Components.telemetry;
 import static org.firstinspires.ftc.teamcode.base.Components.timer;
 import static org.firstinspires.ftc.teamcode.pedroPathing.Pedro.follower;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Fisiks.Solver.out;
-import static org.firstinspires.ftc.teamcode.robotconfigs.Fisiks.pitchTimeGuesses;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Fisiks.runPhysics;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Fisiks.success;
 
@@ -36,7 +35,6 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Pedro;
 import org.firstinspires.ftc.teamcode.presets.PresetControl.*;
 import org.firstinspires.ftc.teamcode.programs.ClosePrimeSigmaConstants;
 import org.firstinspires.ftc.teamcode.vision.Vision;
-import static org.apache.commons.math3.util.FastMath.log;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -91,7 +89,7 @@ public class Inferno implements RobotConfig{
     public static final double[] sotmVirtualTarget = new double[3];
     public static boolean motifShootAll = true;
     private final static double TRANSFER_SELECT_DELAY = 0.035;
-    private final static double TRANSFER_REBOOST_DELAY = 0.093;
+    private final static double TRANSFER_REBOOST_DELAY = 0.0967;
     public static Color[] motif = new Color[]{Color.PURPLE,Color.GREEN,Color.PURPLE};
     public static double classifierBallCount = 0;
     public static Alliance alliance = Alliance.RED;
@@ -422,9 +420,9 @@ public class Inferno implements RobotConfig{
                             )
                     )
             ),
-            new SleepCommand(0.35),
+            new SleepCommand(0.4),
             transferGate.instantSetTargetCommand("open"),
-            new SleepCommand(0.09),
+            new SleepCommand(0.07),
             new ParallelCommand(
                     sideRollers.command(servo->servo.setPowerCommand(0.0)),
                     frontIntake.setPowerCommand("stopped"),
@@ -475,8 +473,8 @@ public class Inferno implements RobotConfig{
                     new IfThen(
                             () -> shotType == ShotType.NORMAL,
                             new ConditionalCommand(
-                                    new IfThen(()->Objects.nonNull(ballStorage[0]) && Objects.nonNull(ballStorage[2]) && prevIntake==RobotState.INTAKE_BACK, backTransfer),
-                                    new IfThen(()->Objects.nonNull(ballStorage[0]) && Objects.nonNull(ballStorage[2]) && prevIntake==RobotState.INTAKE_FRONT, frontTransfer),
+                                    new IfThen(()->{int count = 0; for (int i=0;i<3;i++){if (Objects.nonNull(ballStorage[i])) count++;} return count>1&&prevIntake==RobotState.INTAKE_BACK;}, backTransfer),
+                                    new IfThen(()->{int count = 0; for (int i=0;i<3;i++){if (Objects.nonNull(ballStorage[i])) count++;} return count>1&&prevIntake==RobotState.INTAKE_FRONT;}, frontTransfer),
                                     new IfThen(()->true, midTransfer)
                             )
                     ),
@@ -497,13 +495,9 @@ public class Inferno implements RobotConfig{
             double newVel = targetFlywheelVelocity;
             targetFlywheelVelocity = VelRegression.regressFormula(dist);
             targetFlywheelVelocity = Math.min(targetFlywheelVelocity, VelRegression.regressFormula(173.066461222));
-            /*
-            if (dist>135.532283977) newVel = Math.max(flywheel.get("flywheelLeft").getVelocity(), round(targetFlywheelVelocity/20.0)*20.0 - 100);
-            else newVel = targetFlywheelVelocity;
-            */
             if (useTurretSOTM){
                 for (int i=0;i<3;i++){
-                    double shotTime = ShotTimeRegression.regressFormula(dist, newVel) + 0.3;
+                    double shotTime = ShotTimeRegression.regressFormula(dist, newVel);
                     sotmVirtualTarget[0] = targetPoint[0]-vel.getXComponent()*shotTime; sotmVirtualTarget[1] = targetPoint[1]-vel.getYComponent()*shotTime;
                     dist = Math.sqrt((sotmVirtualTarget[0]-pos.getX())*(sotmVirtualTarget[0]-pos.getX()) + (sotmVirtualTarget[1]-pos.getY())*(sotmVirtualTarget[1]-pos.getY()));
                 }
@@ -864,7 +858,8 @@ public class Inferno implements RobotConfig{
                             shotSequence[1] = motif[0];
                             shotSequence[2] = motif[1];
                         }
-                        if (Objects.nonNull(ballStorage[0]) && Objects.nonNull(ballStorage[2])){
+                        int count = 0; for (int i=0;i<3;i++){if (Objects.nonNull(ballStorage[i])) count++;}
+                        if (count>1){
                             if (shotSequence[1]==ballStorage[0] && shotSequence[1]!=ballStorage[2]){
                                 transferDirection = 0;
                             } else transferDirection = 2;
@@ -990,27 +985,28 @@ public class Inferno implements RobotConfig{
         public static final HashMap<Integer,Boolean> successCache = new HashMap<>();
         public static void runCachedPhysics(){
             Pose pos = follower.getPose();
+            int vel = (int) (round(targetFlywheelVelocity/20.0)*20);
             if (follower.getPose().distanceFrom(previousPos)>CACHE_CLEAR_THRESHOLD || follower.getVelocity().getMagnitude()>VEL_CACHE_CLEAR_THRESHOLD){
                 telemetry.addLine("CLEARING");
                 previousPos = follower.getPose();
                 clearCache();
             }
-            if (cache.containsKey((int) flywheel.get("flywheelLeft").getVelocity())){
-                output[0] = Objects.requireNonNull(cache.get((int) flywheel.get("flywheelLeft").getVelocity()))[0];
-                output[1] = Objects.requireNonNull(cache.get((int) flywheel.get("flywheelLeft").getVelocity()))[1];
+            if (cache.containsKey(vel)){
+                output[0] = Objects.requireNonNull(cache.get(vel))[0];
+                output[1] = Objects.requireNonNull(cache.get(vel))[1];
                 telemetry.addLine("CACHED");
             } else {
-                runPhysics(currentBallPath, targetPoint, follower.getPose(), follower.getVelocity(), targetFlywheelVelocity);
+                runPhysics(currentBallPath, targetPoint, follower.getPose(), follower.getVelocity(), vel);
                 output[0] = Math.toDegrees(out[0]);
                 output[1] = Math.toDegrees(out[1]);
-                cache.put((int) flywheel.get("flywheelLeft").getVelocity(), new Double[]{output[0],output[1]});
-                successCache.put((int) flywheel.get("flywheelLeft").getVelocity(), success);
+                cache.put(vel, new Double[]{output[0],output[1]});
+                successCache.put(vel, success);
                 telemetry.addLine("RUNNING");
             }
             if (follower.getVelocity().getMagnitude()<VEL_CACHE_CLEAR_THRESHOLD){
                 output[1] = Math.toDegrees(Math.atan2(targetPoint[1] - pos.getY(),targetPoint[0] - pos.getX()));
             }
-            telemetry.addData("Converged",successCache.get((int) flywheel.get("flywheelLeft").getVelocity()));
+            telemetry.addData("Converged",successCache.get(vel));
         }
         public static void clearCache() {cache.clear(); successCache.clear();}
     }
