@@ -939,18 +939,18 @@ public class Inferno implements RobotConfig{
         public static double regressFormula(double dist, double vel){return A*vel*vel+B*dist*vel+C*dist*dist+D*vel+E*dist+F;}
     }
     public abstract static class HoodRegression {
-        private static final double F = -876.7214677923611;
-        private static final double E = -1.86246533e+01;
-        private static final double D = 2.73407875e+00;
-        private static final double C = -6.93354901e-02;
-        private static final double B = 2.27088604e-02;
-        private static final double A = -1.76720402e-03;
-        private static final double F_MOT = -876.7214677923611;
-        private static final double E_MOT = -1.86246533e+01;
-        private static final double D_MOT = 2.73407875e+00;
-        private static final double C_MOT = -6.93354901e-02;
-        private static final double B_MOT = 2.27088604e-02;
-        private static final double A_MOT = -1.76720402e-03;
+        private static final double F = 193.3829034318315;
+        private static final double E = -1.26442007e+00;
+        private static final double D = 2.53926777e-02;
+        private static final double C = 4.21149981e-03;
+        private static final double B = 4.44469285e-04;
+        private static final double A = -4.75784788e-05;
+        private static final double F_MOT = 193.3829034318315;
+        private static final double E_MOT = -1.26442007e+00;
+        private static final double D_MOT = 2.53926777e-02;
+        private static final double C_MOT = 4.21149981e-03;
+        private static final double B_MOT = 4.44469285e-04;
+        private static final double A_MOT = -4.75784788e-05;
         public static double regressFormula(double dist, double vel){
             if (currentBallPath==BallPath.HIGH) return A_MOT*vel*vel+B_MOT*dist*vel+C_MOT*dist*dist+D_MOT*vel+E_MOT*dist+F_MOT;
             else return A*vel*vel+B*dist*vel+C*dist*dist+D*vel+E*dist+F;
@@ -964,10 +964,10 @@ public class Inferno implements RobotConfig{
         }
     }
     public abstract static class VelRegression {
-        private static final double M = 5.54220096;
-        private static final double B = 854.397525728256;
-        private static final double M_MOTIF = 5.54220096;
-        private static final double B_MOTIF = 854.397525728256;
+        private static final double M = 5.5609257;
+        private static final double B = 853.830378279798;
+        private static final double M_MOTIF = 5.5609257;
+        private static final double B_MOTIF = 853.830378279798;
         public static double regressFormula(double dist){
             if (shotType == ShotType.NORMAL) return (M *dist+ B);
             else return (M_MOTIF *dist+ B_MOTIF);
