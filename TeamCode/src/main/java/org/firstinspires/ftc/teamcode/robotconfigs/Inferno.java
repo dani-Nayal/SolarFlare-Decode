@@ -506,7 +506,7 @@ public class Inferno implements RobotConfig{
                     dist = Math.sqrt((sotmVirtualTarget[0]-pos.getX())*(sotmVirtualTarget[0]-pos.getX()) + (sotmVirtualTarget[1]-pos.getY())*(sotmVirtualTarget[1]-pos.getY()));
                 }
             }
-            if (useTurretSOTM&&vel.getMagnitude()>0.2) turret[0] = (HoodRegression.regressFormula(dist,actualVel) - TURRET_PITCH_OFFSET)/TURRET_PITCH_RATIO; else turret[0] = (HoodRegression.regressFormula(dist,newVel) - TURRET_PITCH_OFFSET)/TURRET_PITCH_RATIO;
+            if (useTurretSOTM&&vel.getMagnitude()>2) turret[0] = (HoodRegression.regressFormula(dist,actualVel) - TURRET_PITCH_OFFSET)/TURRET_PITCH_RATIO; else turret[0] = (HoodRegression.regressFormula(dist,newVel) - TURRET_PITCH_OFFSET)/TURRET_PITCH_RATIO;
             turret[1] = Math.toDegrees(Math.atan2(sotmVirtualTarget[1] - pos.getY(), sotmVirtualTarget[0] - pos.getX()));
             sotmOffset = turret[1] - Math.toDegrees(Math.atan2(targetPoint[1] - pos.getY(), targetPoint[0] - pos.getX()));
             double heading = Math.toDegrees(follower.getHeading());
@@ -964,10 +964,10 @@ public class Inferno implements RobotConfig{
         }
     }
     public abstract static class VelRegression {
-        private static final double M = 7.08110593;
-        private static final double B = 728.460226813;
-        private static final double M_MOTIF = 7.08110593;
-        private static final double B_MOTIF = 728.460226813;
+        private static final double M = 5.54220096;
+        private static final double B = 854.397525728256;
+        private static final double M_MOTIF = 5.54220096;
+        private static final double B_MOTIF = 854.397525728256;
         public static double regressFormula(double dist){
             if (shotType == ShotType.NORMAL) return (M *dist+ B);
             else return (M_MOTIF *dist+ B_MOTIF);
