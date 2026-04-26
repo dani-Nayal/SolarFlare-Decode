@@ -121,9 +121,9 @@ public class ClosePrimeSigmaConstants {
         poses.put("secondSpike",new Pose(18.829, 58.805));
         poses.put("gateOpen",new Pose(17, 58.0,Math.toRadians(170)));
         poses.put("firstSpike",new Pose(22.773, 81,Math.toRadians(180)));
-        poses.put("thirdSpikeCtrl",new Pose(80.067, 27.483));
-        poses.put("thirdSpike",new Pose(13.504, 41.131,Math.toRadians(180)));
-        poses.put("thirdShootCtrl",new Pose(44.169, 52.575));
+        poses.put("thirdSpikeLead",new Pose(40.90, 43.23));
+        poses.put("thirdSpikeCtrl",new Pose(35.36, 35.64));
+        poses.put("thirdSpike",new Pose(18.66, 35.69,Math.toRadians(180)));
         poses.put("park",new Pose(45,79,Math.toRadians(180)));
     }
     public static Pose getPose(String input){if (alliance==Inferno.Alliance.BLUE) return poses.get(input); else return mirrorPose(Objects.requireNonNull(poses.get(input)));}
@@ -137,7 +137,11 @@ public class ClosePrimeSigmaConstants {
     public static Command preloadMotifShoot = new SequentialCommand(new SleepCommand(INITIAL_WAIT),
             new PedroCommand(b->
                     b.addPath(new BezierLine(follower::getPose,getPose("preloadMotifShoot")))
-                            .setHeadingInterpolation(HeadingInterpolator.linear(getHeading("start"),getHeading("preloadMotifShoot"),0.5)),
+                            .setHeadingInterpolation(HeadingInterpolator.piecewise(
+                                    new HeadingInterpolator.PiecewiseNode(0.0,0.4,HeadingInterpolator.constant(getHeading("start"))),
+                                    HeadingInterpolator.PiecewiseNode.linear(0.4,0.7,getHeading("start"),getHeading("preloadMotifShoot")),
+                                    new HeadingInterpolator.PiecewiseNode(0.7,1.0,HeadingInterpolator.constant(getHeading("preloadMotifShoot")))
+                            )),
                     true),
             shoot);
     public static Command secondSpike = new SequentialCommand(new PedroCommand(
@@ -210,19 +214,27 @@ public class ClosePrimeSigmaConstants {
     );
     public static Command thirdSpike =  new SequentialCommand(new PedroCommand(
             (PathBuilder b)->b.addPath(
-                            new BezierCurve(
+                            new BezierLine(
                                     follower::getPose,
-                                    getPose("thirdSpikeCtrl"),
-                                    getPose("thirdSpike")
+                                    getPose("thirdSpikeLead")
                             )
-                    ).setConstantHeadingInterpolation(getHeading("thirdSpike"))
+                    ).setTangentHeadingInterpolation()
+                    .addPath(new BezierCurve(
+                            getPose("thirdSpikeLead"),
+                            getPose("thirdSpikeCtrl"),
+                            getPose("thirdSpike")
+                    )).setTangentHeadingInterpolation()
                     .addParametricCallback(slowDownT,()->follower.setMaxPower(slowDownAmount))
                     .addPath(
                             new BezierLine(
                                     follower::getPose,
                                     getPose("shoot")
                             )
-                    ).setConstantHeadingInterpolation(getHeading("shoot"))
+                    ).setHeadingInterpolation(HeadingInterpolator.piecewise(
+                            new HeadingInterpolator.PiecewiseNode(0.0,0.4,HeadingInterpolator.tangent.reverse()),
+                            HeadingInterpolator.PiecewiseNode.linear(0.4,0.7,Math.atan2(getPose("thirdSpike").getY() - getPose("shoot").getY(), getPose("thirdSpike").getX() - getPose("shoot").getX()), getHeading("shoot")),
+                            new HeadingInterpolator.PiecewiseNode(0.7,1.0,HeadingInterpolator.constant(getHeading("shoot")))
+                    ))
                     .addParametricCallback(speedUpT,()->follower.setMaxPower(1.0))
                     .addParametricCallback(stopIntakeT,()->setState(Inferno.RobotState.STOPPED).run()),true), shoot);
     public static Command park = new SequentialCommand(setState(null),
