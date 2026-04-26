@@ -15,6 +15,7 @@ import static java.lang.Math.round;
 
 import org.apache.commons.lang3.tuple.Triple;
 
+import com.pedropathing.ftc.localization.localizers.PinpointLocalizer;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.math.Vector;
@@ -92,7 +93,7 @@ public class Inferno implements RobotConfig{
     private final static double TRANSFER_REBOOST_DELAY = 0.0967;
     public static Color[] motif = new Color[]{Color.PURPLE,Color.GREEN,Color.PURPLE};
     public static double classifierBallCount = 0;
-    public static Alliance alliance = Alliance.RED;
+    public static Alliance alliance = Alliance.BLUE;
     public static GamePhase gamePhase = GamePhase.AUTO;
     public static VelocityPID leftVelocityPID = new VelocityPID(false,BotMotor::getVelocity,0.0014, 0.0012, 0.000067).setIntegralStartThreshold(100).setDerivativeStartThreshold(80);
     public static VelocityPID rightVelocityPID = new VelocityPID(false,(BotMotor motor)->flywheel.get("flywheelLeft").getVelocity(),0.0014, 0.0012, 0.000067).setIntegralStartThreshold(100).setDerivativeStartThreshold(80);
@@ -104,7 +105,8 @@ public class Inferno implements RobotConfig{
     public static double turretOffsetFromAuto;
     public static boolean useVelFeedforward = true;
     public final static double[] turret = new double[2];
-    public static Pose relocalizePose;
+    public static Pose hpRelocalizePose;
+    public static Pose gateRelocalizePose;
     public static boolean useTurretSOTM = true;
     public static double sotmOffset;
     public static double prevSotmOffset;
@@ -216,7 +218,7 @@ public class Inferno implements RobotConfig{
                                 new Clamp(), new CustomFeedforward(1, ()->{
                                     if (((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()<targetFlywheelVelocity-65)) {return 1.0;}
                                     if ((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+10){return -1.0;}
-                                    else if (flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+85){return -1.0;}
+                                    else if (flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+45){return -1.0;}
                                     else {return 0.0;}}),
                                 new Clamp()
                         )),
@@ -226,12 +228,12 @@ public class Inferno implements RobotConfig{
                                 new Clamp(), new CustomFeedforward(1, ()->{
                                     if (((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()<targetFlywheelVelocity-65)) {return 1.0;}
                                     else if ((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+10){return -1.0;}
-                                    else if (flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+85){return -1.0;}
+                                    else if (flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+45){return -1.0;}
                                     else {return 0.0;}}),
                                 new Clamp()
                         ))
         );
-        turretYaw.call(servo -> servo.setTargetBounds(() -> 180.0 * TURRET_YAW_RATIO + TURRET_YAW_OFFSET, () -> -110.0 * TURRET_YAW_RATIO + TURRET_YAW_OFFSET));
+        turretYaw.call(servo -> servo.setTargetBounds(() -> 195.0 * TURRET_YAW_RATIO + TURRET_YAW_OFFSET, () -> -110.0 * TURRET_YAW_RATIO + TURRET_YAW_OFFSET));
         turretPitch.call((BotServo servo) -> servo.setTargetBounds(() -> 159.8, () -> 85.9));
         turretPitch.call((BotServo servo)->servo.setPositionCacheThreshold(0.2));
         frontIntake.setKeyPowers(
@@ -501,7 +503,7 @@ public class Inferno implements RobotConfig{
             targetFlywheelVelocity = Math.min(targetFlywheelVelocity, VelRegression.regressFormula(173.066461222));
             if (useTurretSOTM){
                 for (int i=0;i<5;i++){
-                    double shotTime = ShotTimeRegression.regressFormula(dist, actualVel);
+                    double shotTime = ShotTimeRegression.regressFormula(dist, newVel);
                     sotmVirtualTarget[0] = targetPoint[0]-vel.getXComponent()*shotTime; sotmVirtualTarget[1] = targetPoint[1]-vel.getYComponent()*shotTime;
                     dist = Math.sqrt((sotmVirtualTarget[0]-pos.getX())*(sotmVirtualTarget[0]-pos.getX()) + (sotmVirtualTarget[1]-pos.getY())*(sotmVirtualTarget[1]-pos.getY()));
                 }
@@ -510,14 +512,16 @@ public class Inferno implements RobotConfig{
             turret[1] = Math.toDegrees(Math.atan2(sotmVirtualTarget[1] - pos.getY(), sotmVirtualTarget[0] - pos.getX()));
             sotmOffset = turret[1] - Math.toDegrees(Math.atan2(targetPoint[1] - pos.getY(), targetPoint[0] - pos.getX()));
             double heading = Math.toDegrees(follower.getHeading());
-            turret[1] = turret[1]%360;
-            if ((turret[1]-heading)<=-180) turret[1] += 360;
-            else if ((turret[1]-heading)>=250) turret[1] -= 360;
+            double realAngle = turret[1]-heading;
+            realAngle = realAngle%360;
+            if (realAngle<0) realAngle+=360;
+            if (realAngle>=250) realAngle -= 360;
             hoodDesired = turret[0];
-            yawDesired = turret[1] - heading;
+            yawDesired = realAngle;
             double turretFeedforward = Math.max(-50,Math.min(50,YAW_FEEDFORWARD*getTurretVelProjected()));
             turretPitch.call((BotServo servo)->servo.setTarget(turret[0]*TURRET_PITCH_RATIO+TURRET_PITCH_OFFSET));
-            turretYaw.call(servo->servo.setTarget((turret[1]-heading)*TURRET_YAW_RATIO+TURRET_YAW_OFFSET+turretFeedforward));
+            double finalRealAngle = realAngle;
+            if (realAngle<=195) turretYaw.call(servo->servo.setTarget(finalRealAngle *TURRET_YAW_RATIO+TURRET_YAW_OFFSET+turretFeedforward));
             prevSotmOffset = sotmOffset;
     });
     /*
@@ -975,7 +979,8 @@ public class Inferno implements RobotConfig{
     }
     public static void setTargetPoint(){
         if (alliance==Alliance.RED) targetPoint[0] = 141.5; else targetPoint[0] = 2.5;
-        if (follower.getPose().getY()>=108) targetPoint[1] = 140; else targetPoint[1] = 141.5;
+        //if (follower.getPose().getY()>=108) targetPoint[1] = 140; else targetPoint[1] = 141.5;
+        targetPoint[1] = 141.5;
         if (shotType == ShotType.MOTIF && currentBallPath==BallPath.LOW) targetPoint[1]-=2;
         targetPoint[2] = 46;
         if (currentBallPath == BallPath.HIGH) targetPoint[2] = 34;
@@ -1045,8 +1050,8 @@ public class Inferno implements RobotConfig{
         motifShootAll = true;
         ballStorage = new Color[3];
         classifierBallCount=0;
-        if (alliance == Alliance.RED) relocalizePose = new Pose(9,7.5,Math.toRadians(180));
-        else if (alliance == Alliance.BLUE) relocalizePose = new Pose(135,7.5,Math.toRadians(0));
+        if (alliance == Alliance.RED) {hpRelocalizePose = new Pose(8.25,7.2,Math.toRadians(0)); gateRelocalizePose = new Pose(144-16.26,78.33,Math.toRadians(0));}
+        else if (alliance == Alliance.BLUE) {hpRelocalizePose = new Pose(144-8.25,7.2,Math.toRadians(180)); gateRelocalizePose = new Pose(16.26,78.33,Math.toRadians(180));}
         turretYaw.get("turretYawTop").setOffset(-YAW_FIGHT);
         turretYaw.get("turretYawBottom").setOffset(YAW_FIGHT);
         turretPitch.get("turretPitchLeft").setOffset(-HOOD_FIGHT);

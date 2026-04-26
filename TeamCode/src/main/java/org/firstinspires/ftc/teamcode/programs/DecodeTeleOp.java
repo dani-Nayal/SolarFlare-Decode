@@ -12,6 +12,7 @@ import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.autoShoot;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.ballStorage;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.classifierBallCount;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.findMotif;
+import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.gateRelocalizePose;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.motif;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.flywheel;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.gamePhase;
@@ -21,12 +22,12 @@ import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.leftRear;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.loopFSM;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.panic;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.physicsTime;
+import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.hpRelocalizePose;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.rightFront;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.rightRear;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.robotState;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.setState;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.shotType;
-import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.stopIntake;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.targetFlywheelVelocity;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.targetPoint;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.toggleShotType;
@@ -117,8 +118,8 @@ public class DecodeTeleOp extends LinearOpMode {
                 new IfThen(()->gamepad2.x,new InstantCommand(()->classifierBallCount=0)),
                 new IfThen(()->gamepad2.a,new InstantCommand(()->{if (classifierBallCount<9) {classifierBallCount+=1;}})),
                 new IfThen(()->gamepad2.b,new InstantCommand(()->{if (classifierBallCount>0){classifierBallCount-=1;}})),
-                new IfThen(()->gamepad2.left_bumper, aprilTag)
-                //new IfThen(()->gamepad2.left_bumper, new InstantCommand(()->follower.setPose(relocalizePose)))
+                new IfThen(()->gamepad2.right_bumper, new InstantCommand(()->follower.setPose(gateRelocalizePose))),
+                new IfThen(()->gamepad2.left_bumper, new InstantCommand(()->follower.setPose(hpRelocalizePose)))
         );
         executor.setCommands(
                 findMotif,
