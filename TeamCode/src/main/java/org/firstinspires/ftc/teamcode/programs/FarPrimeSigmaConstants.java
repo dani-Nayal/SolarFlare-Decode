@@ -38,6 +38,7 @@ import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.vision;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 
+import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.HeadingInterpolator;
@@ -62,6 +63,8 @@ public class FarPrimeSigmaConstants {
     public static final double INITIAL_WAIT = 0.9;
     public static final double SHOT_TIME = 0.7;
     public static final double PRE_SHOT_TIME = 0;
+    public static final double firstSlowDownT = 0.7;
+    public static final double firstSlowDownAmount = 0.7;
     public static final double slowDownT = 0.73;
     public static final double speedUpT = 0.13;
     public static final double stopIntakeT = 0.17;
@@ -95,11 +98,13 @@ public class FarPrimeSigmaConstants {
     }
     public static double mirrorHeading(double input){return Math.PI - input;}
     static {
-        poses.put("start",new Pose(60, 8.25, Math.toRadians(90)));
+        poses.put("start",new Pose(60,8.25, Math.toRadians(90)));
         poses.put("preloadShoot",new Pose(57.6,15.9,Math.toRadians(140)));
-        poses.put("firstSpike",new Pose(21.1,35.2,Math.toRadians(140)));
+        poses.put("firstSpikeLead",new Pose(41.1,30.2,Math.toRadians(140)));
+        poses.put("firstSpike",new Pose(21.1,30.2,Math.toRadians(180)));
         poses.put("firstShoot",new Pose(48.4, 13.3,Math.toRadians(180)));
-        poses.put("loadingZone",new Pose(9.9, 9.6,Math.toRadians(180)));
+        poses.put("loadingZone",new Pose(12.9, 9.6,Math.toRadians(190)));
+        poses.put("loadingZoneCtrl",new Pose(11.7, 14.4,Math.toRadians(180)));
         poses.put("shoot",new Pose(54.7, 17.6,Math.toRadians(165)));
         poses.put("park",new Pose(40.7,17.6,Math.toRadians(180)));
     }
@@ -107,28 +112,29 @@ public class FarPrimeSigmaConstants {
     public static double getHeading(String input){if (alliance==Inferno.Alliance.BLUE) return Objects.requireNonNull(poses.get(input)).getHeading(); else return mirrorHeading(Objects.requireNonNull(poses.get(input)).getHeading());}
     public static double wallX = 0;
     public static double middleX = (getPose("shoot").getX()+wallX)/2;
-    public static double wallXOffset = 1;
+    public static double wallXOffset = 10.5;
     public static int flag = 0;
-    public static List<Artifact> grounds;
     public static Command preloadShoot = new SequentialCommand(
             new SleepCommand(INITIAL_WAIT),
             new PedroCommand(b->
                 b.addPath(new BezierLine(getPose("start"),getPose("preloadShoot")))
                         .setHeadingInterpolation(HeadingInterpolator.piecewise(
-                                new HeadingInterpolator.PiecewiseNode(0.0,0.5,HeadingInterpolator.constant(getHeading("start"))),
-                                HeadingInterpolator.PiecewiseNode.linear(0.5,0.7, getHeading("start"), getHeading("preloadShoot")),
+                                new HeadingInterpolator.PiecewiseNode(0.0,0.4,HeadingInterpolator.constant(getHeading("start"))),
+                                HeadingInterpolator.PiecewiseNode.linear(0.4,0.7, getHeading("start"), getHeading("preloadShoot")),
                                 new HeadingInterpolator.PiecewiseNode(0.7,1.0,HeadingInterpolator.constant(getHeading("preloadShoot")))
                         )),true),
             shoot
     );
     public static Command firstSpike = new SequentialCommand(
             new PedroCommand(
-                    b->b.addPath(new BezierLine(getPose("preloadShoot"), getPose("firstSpike")))
-                            .setConstantHeadingInterpolation(getHeading("firstSpike"))
+                    b->b.addPath(new BezierLine(getPose("preloadShoot"), getPose("firstSpikeLead")))
+                            .setTangentHeadingInterpolation()
+                        .addPath(new BezierLine(getPose("firstSpikeLead"), getPose("firstSpike")))
+                            .setTangentHeadingInterpolation()
                             .addParametricCallback(slowDownT,()->follower.setMaxPower(slowDownAmount))
                         .addPath(new BezierLine(getPose("firstSpike"), getPose("firstShoot")))
                             .setHeadingInterpolation(HeadingInterpolator.piecewise(
-                                    new HeadingInterpolator.PiecewiseNode(0.0,0.4,HeadingInterpolator.constant(getHeading("firstSpike"))),
+                                    new HeadingInterpolator.PiecewiseNode(0.0,0.4,HeadingInterpolator.tangent.reverse()),
                                     HeadingInterpolator.PiecewiseNode.linear(0.4,0.7, getHeading("firstSpike"), getHeading("firstShoot")),
                                     new HeadingInterpolator.PiecewiseNode(0.7,1.0,HeadingInterpolator.constant(getHeading("firstShoot")))
                             ))
@@ -139,11 +145,10 @@ public class FarPrimeSigmaConstants {
     );
     public static Command loadingZone = new SequentialCommand(
             new PedroCommand(
-                    b->b.addPath(new BezierLine(getPose("firstShoot"), getPose("loadingZone")))
+                    b->b.addPath(new BezierCurve(getPose("firstShoot"), getPose("loadingZoneCtrl"), getPose("loadingZone")))
                             .setHeadingInterpolation(HeadingInterpolator.piecewise(
-                                    new HeadingInterpolator.PiecewiseNode(0.0,0.7,HeadingInterpolator.tangent),
-                                    HeadingInterpolator.PiecewiseNode.linear(0.7,0.9, Math.atan2(getPose("loadingZone").getY() - getPose("firstShoot").getY(), getPose("loadingZone").getX() - getPose("firstShoot").getX()), getHeading("loadingZone")),
-                                    new HeadingInterpolator.PiecewiseNode(0.9,1.0, HeadingInterpolator.constant(getHeading("loadingZone")))
+                                    new HeadingInterpolator.PiecewiseNode(0.0,0.8,HeadingInterpolator.constant(getHeading("firstShoot"))),
+                                    HeadingInterpolator.PiecewiseNode.linear(0.8,1.0,getHeading("firstShoot"),getHeading("loadingZone"))
                             ))
                             .addParametricCallback(slowDownT,()->follower.setMaxPower(slowDownAmount))
                         .addPath(new BezierLine(getPose("loadingZone"), getPose("shoot")))
@@ -160,8 +165,7 @@ public class FarPrimeSigmaConstants {
     );
     public static Pose getClusterPose(double x, double xOffset){
         Pose pos = follower.getPose();
-        grounds = vision.getGroundAndClassifierArtifacts(pos).get(0);
-        Double angle = vision.intakingAngleArtifacts(grounds, pos,1);
+        Double angle = vision.intakingAngleArtifacts(vision.getGroundAndClassifierArtifacts(pos).get(0), pos,1);
         FarPrimeSigmaConstants.angle = angle;
         if (Objects.isNull(angle)) angle = visionHeading;
         else angle = Math.toRadians(angle);
@@ -187,7 +191,7 @@ public class FarPrimeSigmaConstants {
                                                                     new HeadingInterpolator.PiecewiseNode(0.7,1.0,HeadingInterpolator.constant(visionHeading))
                                                             ))
                                                             .addParametricCallback(slowDownT,()->follower.setMaxPower(slowDownAmount))
-                                                            .addCallback(()->(follower.getChainIndex()==1&&timer.time()-firstPathStartTime>5),()->failsafe=true)
+                                                            .addCallback(()->(follower.getChainIndex()==1&&timer.time()-firstPathStartTime>3.5),()->failsafe=true)
                                                         .addPath(new BezierLine(follower::getPose, getPose("shoot")))
                                                         .setHeadingInterpolation(HeadingInterpolator.piecewise(
                                                                 new HeadingInterpolator.PiecewiseNode(0.0,0.2,HeadingInterpolator.constant(visionHeading)),
@@ -229,7 +233,7 @@ public class FarPrimeSigmaConstants {
         Components.telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         flag = 0;
         Inferno.alliance = alliance;
-        if (alliance == Inferno.Alliance.BLUE) {wallX = 2.5; wallXOffset = 9.75; visionHeading = Math.toRadians(180);} else {wallX = 141.5; wallXOffset = -9.75; visionHeading = Math.toRadians(0);}
+        if (alliance == Inferno.Alliance.BLUE) {wallX = 2.5; wallXOffset = 12; visionHeading = Math.toRadians(180);} else {wallX = 141.5; wallXOffset = -12; visionHeading = Math.toRadians(0);}
         middleX = (getPose("shoot").getX()+wallX)/2;
         gamePhase = Inferno.GamePhase.AUTO;
         Pedro.createFollower(getPose("start"));
@@ -254,7 +258,6 @@ public class FarPrimeSigmaConstants {
         turretOffsetFromAuto = turretYaw.get("turretYawTop").getOffset() + YAW_FIGHT;
         Components.activateActuatorControl();
         executor.setWriteToTelemetry(()->{
-            telemetry.addData("detected len",grounds.size());
             telemetry.addData("Motif",Arrays.asList(motif));
             telemetry.addLine("");
             telemetry.addData("Target Flywheel Velocity", targetFlywheelVelocity);

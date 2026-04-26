@@ -403,32 +403,40 @@ public class Inferno implements RobotConfig{
     public static final Command stopIntake = new ParallelCommand(
         new SequentialCommand(
             new InstantCommand(Inferno::readBallStorage),
-            transferGate.instantSetTargetCommand("closed"),
-            sideRollers.command(servo->servo.setPowerCommand(1.0)),
             new ConditionalCommand(
                     new IfThen(
-                            ()->prevIntake==RobotState.INTAKE_BACK,
-                            new ParallelCommand(
-                                    frontIntakeGate.instantSetTargetCommand("backoff"),
-                                    backIntakeGate.instantSetTargetCommand("backoff"),
-                                    frontIntake.setPowerCommand("frontDrive"),
-                                    backIntake.setPowerCommand("otherFrontDrive")
-                            )
-                    ),
-                    new IfThen(
-                            ()->prevIntake==RobotState.INTAKE_FRONT,
-                            new ParallelCommand(
-                                    frontIntakeGate.instantSetTargetCommand("backoff"),
-                                    backIntakeGate.instantSetTargetCommand("backoff"),
-                                    frontIntake.setPowerCommand("otherFrontDrive"),
-                                    backIntake.setPowerCommand("frontDrive")
+                            ()->Objects.nonNull(ballStorage[0])&&Objects.nonNull(ballStorage[1])&&Objects.nonNull(ballStorage[1]),
+                            new SequentialCommand(
+                                    transferGate.instantSetTargetCommand("closed"),
+                                    sideRollers.command(servo->servo.setPowerCommand(1.0)),
+                                    new ConditionalCommand(
+                                            new IfThen(
+                                                    ()->prevIntake==RobotState.INTAKE_BACK,
+                                                    new ParallelCommand(
+                                                            frontIntakeGate.instantSetTargetCommand("backoff"),
+                                                            backIntakeGate.instantSetTargetCommand("backoff"),
+                                                            frontIntake.setPowerCommand("frontDrive"),
+                                                            backIntake.setPowerCommand("otherFrontDrive")
+                                                    )
+                                            ),
+                                            new IfThen(
+                                                    ()->prevIntake==RobotState.INTAKE_FRONT,
+                                                    new ParallelCommand(
+                                                            frontIntakeGate.instantSetTargetCommand("backoff"),
+                                                            backIntakeGate.instantSetTargetCommand("backoff"),
+                                                            frontIntake.setPowerCommand("otherFrontDrive"),
+                                                            backIntake.setPowerCommand("frontDrive")
+                                                    )
+                                            )
+                                    ),
+                                    new SleepCommand(0.35),
+                                    transferGate.instantSetTargetCommand("open"),
+                                    new SleepCommand(0.09)
                             )
                     )
             ),
-            new SleepCommand(0.35),
-            transferGate.instantSetTargetCommand("open"),
-            new SleepCommand(0.09),
             new ParallelCommand(
+                    transferGate.instantSetTargetCommand("open"),
                     sideRollers.command(servo->servo.setPowerCommand(0.0)),
                     frontIntake.setPowerCommand("stopped"),
                     backIntake.setPowerCommand("stopped"),
