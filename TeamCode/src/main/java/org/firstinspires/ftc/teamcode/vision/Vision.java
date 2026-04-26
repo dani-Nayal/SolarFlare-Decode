@@ -175,7 +175,16 @@ public class Vision {
 
             double artifactY = y + depth * sin + (-horizontal) * cos;
 
-            Artifact artifact = new Artifact(artifactX, artifactY, className, detectorResult.getTargetXPixels(), detectorResult.getTargetYPixels(), targetX, targetY, getTopCenterXPixels(cameraOrientation, corners), getTopCenterYPixels(cameraOrientation, corners), tx, ty);
+            double targetXTopCenter = getTopCenterXPixels(cameraOrientation, corners);
+            double targetYTopCenter = getTopCenterYPixels(cameraOrientation, corners);
+
+            double xTopOffset = targetXTopCenter - cxNN;
+            double yTopOffset = cyNN - targetYTopCenter;
+
+            double txTopCenter = Math.toDegrees(Math.atan(xTopOffset / fxNN));
+            double tyTopCenter = Math.toDegrees(Math.atan(yTopOffset / fyNN));
+
+            Artifact artifact = new Artifact(artifactX, artifactY, className, detectorResult.getTargetXPixels(), detectorResult.getTargetYPixels(), targetX, targetY, getTopCenterXPixels(cameraOrientation, corners), getTopCenterYPixels(cameraOrientation, corners), txTopCenter, tyTopCenter);
 
             artifacts.add(artifact);
 
@@ -859,9 +868,9 @@ public class Vision {
         List<Artifact> classifierArtifacts = new ArrayList<>();
 
         for (Artifact artifact : artifacts){
-            double ty = artifact.getTy();
+            double ty = artifact.getTyTopCenter();
 
-            if (ty > -0.7){
+            if (ty > 0){
                 classifierArtifacts.add(artifact);
             }
         }

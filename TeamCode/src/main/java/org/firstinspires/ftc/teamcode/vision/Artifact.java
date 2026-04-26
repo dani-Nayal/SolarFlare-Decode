@@ -10,14 +10,14 @@ public class Artifact {
     double centerYPixels;
     double topCenterXPixels;
     double topCenterYPixels;
-    double tx;
-    double ty;
+    double txTopCenter;
+    double tyTopCenter;
     public Artifact(double x, double y, String className){
         this.x = x;
         this.y = y;
         this.className = className;
     }
-    public Artifact(double x, double y, String className, double centerXPixels, double centerYPixels, double bottomCenterXPixels, double bottomCenterYPixels, double topCenterXPixels, double topCenterYPixels, double tx, double ty){
+    public Artifact(double x, double y, String className, double centerXPixels, double centerYPixels, double bottomCenterXPixels, double bottomCenterYPixels, double topCenterXPixels, double topCenterYPixels, double txTopCenter, double tyTopCenter){
         this.x = x;
         this.y = y;
         this.className = className;
@@ -27,8 +27,8 @@ public class Artifact {
         this.bottomCenterYPixels = bottomCenterYPixels;
         this.topCenterXPixels = topCenterXPixels;
         this.topCenterYPixels = topCenterYPixels;
-        this.tx = tx;
-        this.ty = ty;
+        this.txTopCenter = txTopCenter;
+        this.tyTopCenter = tyTopCenter;
     }
     public double getX() {return x;}
     public void setX(double x) {this.x = x;}
@@ -48,8 +48,8 @@ public class Artifact {
     public void setTopCenterYPixels(double topCenterYPixels) {this.topCenterYPixels = topCenterYPixels;}
     public double getTopCenterXPixels() {return topCenterXPixels;}
     public void setTopCenterXPixels(double topCenterXPixels) {this.topCenterXPixels = topCenterXPixels;}
-    public double getTx() {return tx;}
-    public void setTx(double tx) {this.tx = tx;}
-    public double getTy() {return ty;}
-    public void setTy(double ty) {this.ty = ty;}
+    public double getTxTopCenter() {return txTopCenter;}
+    public void setTxTopCenter(double txCenter) {this.txTopCenter = txCenter;}
+    public double getTyTopCenter() {return tyTopCenter;}
+    public void setTyTopCenter(double tyCenter) {this.tyTopCenter = tyCenter;}
 }
