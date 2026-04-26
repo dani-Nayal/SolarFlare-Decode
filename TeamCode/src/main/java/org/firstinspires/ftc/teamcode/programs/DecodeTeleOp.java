@@ -71,6 +71,7 @@ public class DecodeTeleOp extends LinearOpMode {
     private boolean holdingPosition = false;
     private double lastTime = 0;
     private double previousBallCount = -1;
+    private boolean isRed = false;
     private final Color[] dinglyAlliance = new Color[3];
     private void breakFollowing(){
         holdingPosition = false;
@@ -165,23 +166,16 @@ public class DecodeTeleOp extends LinearOpMode {
                                         ()->(follower.isBusy() || holdingPosition),
                                         Pedro.updateCommand()
                                 )
-                        )
-                        /*new InstantCommand(()->{
-                            if (315-turretYaw.get("turretYawFront").getTarget()<15 && !gamepad1.isRumbling()){gamepad1.rumble(1000000000);}
-                            else if (turretYaw.get("turretYawFront").getTarget()-0<15 && !gamepad1.isRumbling()){gamepad1.rumble(1000000000);}
-                            else if (turretYaw.get("turretYawFront").getTarget()-0>15 && 315-turretYaw.get("turretYawFront").getTarget()>15 && gamepad1.isRumbling()){gamepad1.stopRumble();}
-                            long count = Arrays.stream(ballStorage).filter(Objects::isNull).count();
-                            if (count==3 && count!=previousBallCount){
-                                gamepad1.setLedColor(0,0,0,1000000000);
-                            } else if (count==2 && count!=previousBallCount){
-                                gamepad1.setLedColor(1,0,0,1000000000);
-                            } else if (count==1 && count!=previousBallCount){
-                                gamepad1.setLedColor(0,0,1,1000000000);
-                            } else if (count==0 && count!=previousBallCount){
-                                gamepad1.setLedColor(1,1,1,1000000000);
+                        ),
+                        new InstantCommand(()->{
+                            if (yawDesired>=180 || yawDesired<=-95 && !isRed) {isRed=true; gamepad1.setLedColor(255,0,0,1000000);}
+                            else if (yawDesired<=180 && yawDesired>=-95) {isRed=false; gamepad1.setLedColor(0,0,0,1000000);}
+                            long count = Arrays.stream(ballStorage).filter(Objects::nonNull).count();
+                            if (count==3 && count!=previousBallCount && !gamepad1.isRumbling()){
+                                gamepad1.rumble(1000);
                             }
                             previousBallCount = count;
-                        })*/
+                        })
                 ),
                 loopFSM
 
