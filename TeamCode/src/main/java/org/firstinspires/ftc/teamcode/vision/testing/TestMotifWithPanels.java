@@ -55,7 +55,7 @@ public class TestMotifWithPanels extends OpMode {
         if (isBlueAlliance) alliance = Inferno.Alliance.BLUE;
         else alliance = Inferno.Alliance.RED;
 
-        List<Artifact> classifierArtifacts = vision.getGroundAndClassifierArtifacts(botPose).get(0);
+        List<Artifact> classifierArtifacts = vision.getGroundAndClassifierArtifacts(botPose).get(1);
 
         if (!classifierArtifacts.isEmpty()){
 

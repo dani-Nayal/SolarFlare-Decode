@@ -155,7 +155,7 @@ public class Vision {
             double tx = Math.toDegrees(Math.atan(xOffset / fxNN));
             double ty = Math.toDegrees(Math.atan(yOffset / fyNN));
 
-            double verticalAngleDeg = ty + cameraPoseOnRobot.getOrientation().getPitch(AngleUnit.DEGREES);
+            double verticalAngleDeg = ty + 90 + cameraPoseOnRobot.getOrientation().getPitch(AngleUnit.DEGREES);
 
             double depth = cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).z * Math.tan(Math.toRadians(verticalAngleDeg));
 
@@ -175,7 +175,7 @@ public class Vision {
 
             double artifactY = y + depth * sin + (-horizontal) * cos;
 
-            Artifact artifact = new Artifact(artifactX, artifactY, className, detectorResult.getTargetXPixels(), detectorResult.getTargetYPixels(), targetX, targetY, getTopCenterXPixels(cameraOrientation, corners), getTopCenterYPixels(cameraOrientation, corners));
+            Artifact artifact = new Artifact(artifactX, artifactY, className, detectorResult.getTargetXPixels(), detectorResult.getTargetYPixels(), targetX, targetY, getTopCenterXPixels(cameraOrientation, corners), getTopCenterYPixels(cameraOrientation, corners), tx, ty);
 
             artifacts.add(artifact);
 
@@ -854,16 +854,14 @@ public class Vision {
         if (!limelight.isRunning()) limelight.start();
         if (limelight.getStatus().getPipelineIndex() != NN_PIPELINE_INDEX) limelight.pipelineSwitch(NN_PIPELINE_INDEX);
 
-
         List<Artifact> artifacts = getArtifacts(botPose);
 
         List<Artifact> classifierArtifacts = new ArrayList<>();
 
         for (Artifact artifact : artifacts){
-            double x = artifact.getX();
-            double y = artifact.getY();
+            double ty = artifact.getTy();
 
-            if (0 <= x && x <= 144 && 0 <= y && y <= 144){
+            if (ty > -0.7){
                 classifierArtifacts.add(artifact);
             }
         }
