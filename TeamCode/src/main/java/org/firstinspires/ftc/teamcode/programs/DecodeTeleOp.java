@@ -7,6 +7,7 @@ import static org.firstinspires.ftc.teamcode.pedroPathing.Pedro.follower;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_PITCH_OFFSET;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_PITCH_RATIO;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.YAW_FIGHT;
+import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.alliance;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.autoGateIntake;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.autoShoot;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.ballStorage;
@@ -70,7 +71,7 @@ public class DecodeTeleOp extends LinearOpMode {
     public static double HIGH_FRICTION = Fisiks.HIGH_FRICTION;
     private boolean holdingPosition = false;
     private double lastTime = 0;
-    private double previousBallCount = -1;
+    private double previousBallCount = 0;
     private boolean isRed = false;
     private final Color[] dinglyAlliance = new Color[3];
     private void breakFollowing(){
@@ -103,12 +104,16 @@ public class DecodeTeleOp extends LinearOpMode {
         executor.setCommands(
                 new SequentialCommand(new SleepCommand(1.0),new InstantCommand(Inferno::initTurretYawPosition)),
                 new RunResettingLoop(new InstantCommand(()->{if (gamepad1.back && !followerMade) {follower.setPose(new Pose(72,72,0)); followerMade = true; Inferno.motifDetected = false;  turretOffsetFromAuto = 0;}})),
-                new RunResettingLoop(new InstantCommand(()->{if (gamepad1.dpad_left) {Inferno.alliance = Alliance.BLUE;}})),
-                new RunResettingLoop(new InstantCommand(()->{if (gamepad1.dpad_right) {Inferno.alliance = Alliance.RED;}}))
+                new RunResettingLoop(new InstantCommand(()->{if (gamepad1.dpad_left) {
+                    alliance = Alliance.BLUE;}})),
+                new RunResettingLoop(new InstantCommand(()->{if (gamepad1.dpad_right) {
+                    alliance = Alliance.RED;}}))
         );
         turretYaw.get("turretYawTop").setOffset(turretOffsetFromAuto-YAW_FIGHT);
         turretYaw.get("turretYawBottom").setOffset(turretOffsetFromAuto+YAW_FIGHT);
         executor.runLoop(this::opModeInInit);
+        if (alliance == Alliance.RED) {hpRelocalizePose = new Pose(8.25,7.2,Math.toRadians(0)); gateRelocalizePose = new Pose(144-16.26,78.33,Math.toRadians(0));}
+        else if (alliance == Alliance.BLUE) {hpRelocalizePose = new Pose(144-8.25,7.2,Math.toRadians(180)); gateRelocalizePose = new Pose(16.26,78.33,Math.toRadians(180));}
         follower.setTranslationalPIDFCoefficients(new PIDFCoefficients(0.2*1.4/0.45, 0, 0.001*1.4/0.45, 0));
         follower.setHeadingPIDFCoefficients(new PIDFCoefficients(1.1*0.4/0.35,0.001*0.4/0.35,0.00001*0.4/0.35,0));
         Components.activateActuatorControl();
@@ -166,18 +171,17 @@ public class DecodeTeleOp extends LinearOpMode {
                                         ()->(follower.isBusy() || holdingPosition),
                                         Pedro.updateCommand()
                                 )
-                        ),
-                        new InstantCommand(()->{
-                            if (yawDesired>=180 || yawDesired<=-95 && !isRed) {isRed=true; gamepad1.setLedColor(255,0,0,1000000);}
-                            else if (yawDesired<=180 && yawDesired>=-95) {isRed=false; gamepad1.setLedColor(0,0,0,1000000);}
-                            long count = Arrays.stream(ballStorage).filter(Objects::nonNull).count();
-                            if (count==3 && count!=previousBallCount && !gamepad1.isRumbling()){
-                                gamepad1.rumble(1000);
-                            }
-                            previousBallCount = count;
-                        })
+                        )
                 ),
-                loopFSM
+                loopFSM,
+                new ContinuousCommand(()->{
+                    if (yawDesired>=165 || yawDesired<=-80 && !isRed) {isRed=true; gamepad1.setLedColor(255,0,0,1000000);}
+                    else if (yawDesired<=165 && yawDesired>=-80 && isRed) {isRed=false; gamepad1.setLedColor(0,0,0,1000000);}
+                    long count = Arrays.stream(ballStorage).filter(Objects::nonNull).count();
+                    if (count==3 && count!=previousBallCount && !gamepad1.isRumbling()) gamepad1.rumble(1000);
+                    else if (count!=3 && gamepad1.isRumbling()) gamepad1.stopRumble();
+                    previousBallCount = count;
+                })
 
         );
         executor.setWriteToTelemetry(()->{
