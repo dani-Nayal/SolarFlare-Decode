@@ -102,7 +102,7 @@ public class FarPrimeSigmaConstants {
         poses.put("preloadShoot",new Pose(57.6,15.9,Math.toRadians(140)));
         poses.put("firstSpikeLead",new Pose(41.1,30.2,Math.toRadians(140)));
         poses.put("firstSpike",new Pose(21.1,30.2,Math.toRadians(180)));
-        poses.put("firstShoot",new Pose(48.4, 13.3,Math.toRadians(180)));
+        poses.put("firstShoot",new Pose(49.9, 11.8,Math.toRadians(180)));
         poses.put("loadingZone",new Pose(12.9, 9.6,Math.toRadians(190)));
         poses.put("loadingZoneCtrl",new Pose(11.7, 14.4,Math.toRadians(180)));
         poses.put("shoot",new Pose(54.7, 17.6,Math.toRadians(165)));

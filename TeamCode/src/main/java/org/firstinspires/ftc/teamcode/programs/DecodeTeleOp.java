@@ -36,6 +36,7 @@ import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.turretOffsetFr
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.turretPitch;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.turretYaw;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.useVelFeedforward;
+import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.vision;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.yawDesired;
 import org.firstinspires.ftc.teamcode.robotconfigs.Fisiks;
 
@@ -115,6 +116,7 @@ public class DecodeTeleOp extends LinearOpMode {
         PressCommand pressCommand = new PressCommand(
                 new IfThen(()->gamepad2.dpad_left,setState(RobotState.EXPEL)),
                 new IfThen(()->gamepad2.dpad_right,toggleShotType()),
+                new IfThen(()->gamepad2.y,new InstantCommand(()->classifierBallCount=vision.getGroundAndClassifierArtifacts(follower.getPose()).get(1).size())),
                 new IfThen(()->gamepad2.x,new InstantCommand(()->classifierBallCount=0)),
                 new IfThen(()->gamepad2.a,new InstantCommand(()->{if (classifierBallCount<9) {classifierBallCount+=1;}})),
                 new IfThen(()->gamepad2.b,new InstantCommand(()->{if (classifierBallCount>0){classifierBallCount-=1;}})),
