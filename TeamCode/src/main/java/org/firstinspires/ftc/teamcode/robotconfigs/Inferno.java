@@ -58,6 +58,7 @@ public class Inferno implements RobotConfig{
             new BotServo("turretPitchLeft", Servo.Direction.FORWARD, 422,5,180,102),
             new BotServo("turretPitchRight", Servo.Direction.REVERSE, 422,5,180,102)
     );
+    public static final double TRANSFER_SLOWDOWN = 0.7;
     public static final double TURRET_PITCH_RATIO = (double) 48/30;
     public static final double TURRET_PITCH_OFFSET = 47;
     public static final double TURRET_YAW_RATIO = 1.057777777777676767/(48.0/20.0 * 39.0/83.0);
@@ -287,20 +288,20 @@ public class Inferno implements RobotConfig{
             sideRollers.command(servo->servo.setPowerCommand(1.0)),
             new ParallelCommand(
                     transferGate.instantSetTargetCommand("open"),
-                    frontIntake.setPowerCommand(()->inFar() ? frontIntake.getKeyPower("transfer")*0.7: frontIntake.getKeyPower("transfer")),
-                    backIntake.setPowerCommand(()->inFar() ? backIntake.getKeyPower("otherSideTransfer")*0.7: backIntake.getKeyPower("otherSideTransfer")),
+                    frontIntake.setPowerCommand(()->inFar() ? frontIntake.getKeyPower("transfer")*TRANSFER_SLOWDOWN: frontIntake.getKeyPower("transfer")),
+                    backIntake.setPowerCommand(()->inFar() ? backIntake.getKeyPower("otherSideTransfer")*TRANSFER_SLOWDOWN: backIntake.getKeyPower("otherSideTransfer")),
                     frontIntakeGate.instantSetTargetCommand("closed"),
                     backIntakeGate.instantSetTargetCommand("closed")
             ),
             new SleepCommand(TRANSFER_SELECT_DELAY),
             new ParallelCommand(
-                    backIntake.setPowerCommand(()->inFar() ? backIntake.getKeyPower("sideSelect")*0.7: frontIntake.getKeyPower("sideSelect")),
+                    backIntake.setPowerCommand(()->inFar() ? backIntake.getKeyPower("sideSelect")*TRANSFER_SLOWDOWN: frontIntake.getKeyPower("sideSelect")),
                     frontIntakeGate.instantSetTargetCommand("closed"),
                     backIntakeGate.instantSetTargetCommand("closed")
             ),
             new SleepCommand(TRANSFER_REBOOST_DELAY),
             new ParallelCommand(
-                    backIntake.setPowerCommand(()->inFar() ? backIntake.getKeyPower("transfer")*0.7: backIntake.getKeyPower("transfer")),
+                    backIntake.setPowerCommand(()->inFar() ? backIntake.getKeyPower("transfer")*TRANSFER_SLOWDOWN: backIntake.getKeyPower("transfer")),
                     frontIntakeGate.instantSetTargetCommand("backoff"),
                     backIntakeGate.instantSetTargetCommand("backoff")
             ),
@@ -311,20 +312,20 @@ public class Inferno implements RobotConfig{
             sideRollers.command(servo->servo.setPowerCommand(1.0)),
             new ParallelCommand(
                     transferGate.instantSetTargetCommand("open"),
-                    frontIntake.setPowerCommand(()->inFar() ? frontIntake.getKeyPower("otherSideTransfer")*0.7: frontIntake.getKeyPower("otherSideTransfer")),
-                    backIntake.setPowerCommand(()->inFar() ? backIntake.getKeyPower("transfer")*0.7: backIntake.getKeyPower("transfer")),
+                    frontIntake.setPowerCommand(()->inFar() ? frontIntake.getKeyPower("otherSideTransfer")*TRANSFER_SLOWDOWN: frontIntake.getKeyPower("otherSideTransfer")),
+                    backIntake.setPowerCommand(()->inFar() ? backIntake.getKeyPower("transfer")*TRANSFER_SLOWDOWN: backIntake.getKeyPower("transfer")),
                     frontIntakeGate.instantSetTargetCommand("closed"),
                     backIntakeGate.instantSetTargetCommand("closed")
             ),
             new SleepCommand(TRANSFER_SELECT_DELAY),
             new ParallelCommand(
-                    frontIntake.setPowerCommand(()->inFar() ? frontIntake.getKeyPower("sideSelect")*0.7: frontIntake.getKeyPower("sideSelect")),
+                    frontIntake.setPowerCommand(()->inFar() ? frontIntake.getKeyPower("sideSelect")*TRANSFER_SLOWDOWN: frontIntake.getKeyPower("sideSelect")),
                     frontIntakeGate.instantSetTargetCommand("closed"),
                     backIntakeGate.instantSetTargetCommand("closed")
             ),
             new SleepCommand(TRANSFER_REBOOST_DELAY),
             new ParallelCommand(
-                    frontIntake.setPowerCommand(()->inFar() ? frontIntake.getKeyPower("transfer")*0.7: frontIntake.getKeyPower("transfer")),
+                    frontIntake.setPowerCommand(()->inFar() ? frontIntake.getKeyPower("transfer")*TRANSFER_SLOWDOWN: frontIntake.getKeyPower("transfer")),
                     frontIntakeGate.instantSetTargetCommand("backoff"),
                     backIntakeGate.instantSetTargetCommand("backoff")
             ),
