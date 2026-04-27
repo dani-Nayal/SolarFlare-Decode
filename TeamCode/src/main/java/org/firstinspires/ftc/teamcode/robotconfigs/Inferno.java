@@ -405,7 +405,7 @@ public class Inferno implements RobotConfig{
             new InstantCommand(Inferno::readBallStorage),
             new ConditionalCommand(
                     new IfThen(
-                            ()->Objects.nonNull(ballStorage[0])&&Objects.nonNull(ballStorage[1])&&Objects.nonNull(ballStorage[1]),
+                            ()->Objects.nonNull(ballStorage[0])&&Objects.nonNull(ballStorage[1])&&Objects.nonNull(ballStorage[2]),
                             new SequentialCommand(
                                     transferGate.instantSetTargetCommand("closed"),
                                     sideRollers.command(servo->servo.setPowerCommand(1.0)),
@@ -479,24 +479,27 @@ public class Inferno implements RobotConfig{
             frontIntakeGate.instantSetTargetCommand("closed")
     );
     public static final Command transfer = new ParallelCommand(
-            new InstantCommand(Inferno::readBallStorage),
-            new ConditionalCommand(
-                    new IfThen(
-                            () -> shotType == ShotType.NORMAL,
-                            new ConditionalCommand(
-                                    new IfThen(()->{int count = 0; for (int i=0;i<3;i++){if (Objects.nonNull(ballStorage[i])) count++;} return count>1&&prevIntake==RobotState.INTAKE_BACK;}, backTransfer),
-                                    new IfThen(()->{int count = 0; for (int i=0;i<3;i++){if (Objects.nonNull(ballStorage[i])) count++;} return count>1&&prevIntake==RobotState.INTAKE_FRONT;}, frontTransfer),
-                                    new IfThen(()->true, midTransfer)
-                            )
-                    ),
-                    new IfThen(
-                            () -> shotType == ShotType.SEMISORT,
-                            new SemiSort()
-                    ),
-                    new IfThen(
-                            ()->shotType == ShotType.AIRSORT,
-                            MotifShoot.getFullMotifCommand()
-                    )
+            new SequentialCommand(
+                new InstantCommand(Inferno::readBallStorage),
+                new ConditionalCommand(
+                        new IfThen(
+                                () -> shotType == ShotType.NORMAL,
+                                new ConditionalCommand(
+                                        new IfThen(()->{int count = 0; for (int i=0;i<3;i++){if (Objects.nonNull(ballStorage[i])) count++;} return count>1&&prevIntake==RobotState.INTAKE_BACK;}, backTransfer),
+                                        new IfThen(()->{int count = 0; for (int i=0;i<3;i++){if (Objects.nonNull(ballStorage[i])) count++;} return count>1&&prevIntake==RobotState.INTAKE_FRONT;}, frontTransfer),
+                                        new IfThen(()->true, midTransfer)
+                                )
+                        ),
+                        new IfThen(
+                                () -> shotType == ShotType.SEMISORT,
+                                new SemiSort()
+                        ),
+                        new IfThen(
+                                ()->shotType == ShotType.AIRSORT,
+                                MotifShoot.getFullMotifCommand()
+                        )
+                ),
+                new InstantCommand(()->{ballStorage[0] = null; ballStorage[1] = null; ballStorage[2] = null;})
             ),
             new ContinuousCommand(()->{})
     );
