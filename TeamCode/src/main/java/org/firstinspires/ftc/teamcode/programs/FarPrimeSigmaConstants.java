@@ -38,6 +38,7 @@ import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.vision;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 
+import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.HeadingInterpolator;
@@ -94,9 +95,10 @@ public class FarPrimeSigmaConstants {
     public static double mirrorHeading(double input){return Math.PI - input;}
     static {
         poses.put("start",new Pose(60,8.25, Math.toRadians(90)));
-        poses.put("preloadShoot",new Pose(57.6,15.9,Math.toRadians(130)));
-        poses.put("firstSpikeLead",new Pose(42,34.8,Math.toRadians(130)));
-        poses.put("firstSpike",new Pose(12.3,35.4,Math.toRadians(180)));
+        poses.put("preloadShoot",new Pose(60,20.9,Math.toRadians(130)));
+        poses.put("firstSpikeLead",new Pose(42.6,33.2,Math.toRadians(130)));
+        poses.put("firstSpikeCtrl",new Pose(37.4,36.6,Math.toRadians(180)));
+        poses.put("firstSpike",new Pose(18.8,36.0,Math.toRadians(180)));
         poses.put("firstShoot",new Pose(49.9, 11.8,Math.toRadians(180)));
         poses.put("loadingZoneLead", new Pose(26, 10.5,Math.toRadians(185)));
         poses.put("loadingZone",new Pose(9.9, 9.6,Math.toRadians(185)));
@@ -125,7 +127,7 @@ public class FarPrimeSigmaConstants {
             new PedroCommand(
                     b->b.addPath(new BezierLine(getPose("preloadShoot"), getPose("firstSpikeLead")))
                             .setTangentHeadingInterpolation()
-                        .addPath(new BezierLine(getPose("firstSpikeLead"), getPose("firstSpike")))
+                        .addPath(new BezierCurve(getPose("firstSpikeLead"), getPose("firstSpikeCtrl"), getPose("firstSpike")))
                             .setTangentHeadingInterpolation()
                             .addParametricCallback(slowDownT,()->follower.setMaxPower(slowDownAmount))
                         .addPath(new BezierLine(getPose("firstSpike"), getPose("firstShoot")))
