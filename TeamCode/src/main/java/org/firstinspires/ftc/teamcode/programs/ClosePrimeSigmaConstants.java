@@ -20,7 +20,6 @@ import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.findMotif;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.flywheel;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.gamePhase;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.hoodDesired;
-import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.initTurretYawPosition;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.loopFSM;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.motif;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.readBallStorage;
@@ -30,7 +29,6 @@ import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.setState;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.shotType;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.targetFlywheelVelocity;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.targetPoint;
-import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.toggleShotType;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.transfer;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.turretOffsetFromAuto;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.turretPitch;
@@ -76,14 +74,13 @@ public class ClosePrimeSigmaConstants {
     public static final double speedUpT = 0.05;
     public static final double stopIntakeT = 0.17;
     public static final double slowDownAmount = 1.0;
-    public static final double gateIntakeTimeout = 0.9;
+    public static final double gateIntakeTimeout = 1.5;
     public static final double secondShootSlowT = 0.75;
     public static final double fourthShootSlowT = 0.75;
     public static final double shootSlowT = 0.8;
     public static final double shootSlowAmount = 1.0;
     public static boolean airSorting = false;
     public static Command shoot = new SequentialCommand(
-            new InstantCommand(()->{classifierBallCount = vision.getGroundAndClassifierArtifacts(follower.getPose()).get(1).size();}),
             new SleepCommand(PRE_SHOT_TIME),
             setState(Inferno.RobotState.SHOOTING),
             new SleepCommand(SHOT_TIME),
@@ -112,7 +109,7 @@ public class ClosePrimeSigmaConstants {
     public static double mirrorHeading(double input){return Math.PI - input;}
     public static final double[] SHOOT = new double[]{59.85,79.42,Math.toRadians(180)};
     public static final double[] FINAL_SHOOT = new double[]{65,105,Math.toRadians(180)};
-    public static final double[] MOTIF_SHOOT = new double[]{62,69,Math.toRadians(180)};
+    public static final double[] MOTIF_SHOOT = new double[]{65.5,72.5,Math.toRadians(163)};
     static {
         poses.put("start",new Pose(20.29, 121.28, Math.toRadians(144)));
         poses.put("preloadShoot",new Pose(SHOOT[0],SHOOT[1],Math.toRadians(144)));
@@ -120,9 +117,9 @@ public class ClosePrimeSigmaConstants {
         poses.put("shoot",new Pose(SHOOT[0],SHOOT[1],SHOOT[2]));
         poses.put("secondSpikeCtrl",new Pose(41.07, 58.06));
         poses.put("secondSpike",new Pose(18.829, 58.805));
-        poses.put("gateOpen",new Pose(17, 58.0,Math.toRadians(170)));
+        poses.put("gateOpen",new Pose(16.3, 57.5,Math.toRadians(160)));
         poses.put("firstSpike",new Pose(22.773, 81,Math.toRadians(180)));
-        poses.put("thirdSpikeLead",new Pose(40.90, 43.23));
+        poses.put("thirdSpikeLead",new Pose(42.90, 45.23));
         poses.put("thirdSpikeCtrl",new Pose(35.36, 35.64));
         poses.put("thirdSpike",new Pose(18.66, 35.69,Math.toRadians(180)));
         poses.put("park",new Pose(45,79,Math.toRadians(180)));
@@ -185,11 +182,13 @@ public class ClosePrimeSigmaConstants {
                                     )
                             )
                             .setHeadingInterpolation(HeadingInterpolator.piecewise(
-                                    HeadingInterpolator.PiecewiseNode.linear(0.0, 0.5, getHeading("gateOpen"), getHeading("shoot")),
-                                    new HeadingInterpolator.PiecewiseNode(0.5,1.0,HeadingInterpolator.constant(getHeading("shoot")))
+                                    new HeadingInterpolator.PiecewiseNode(0.0,0.1,HeadingInterpolator.constant(getHeading("gateOpen"))),
+                                    new HeadingInterpolator.PiecewiseNode(0.1,0.4, HeadingInterpolator.linear(getHeading("gateOpen"),getHeading("shoot"))),
+                                    new HeadingInterpolator.PiecewiseNode(0.4,1.0,HeadingInterpolator.constant(getHeading("shoot")))
                             ))
                             .addParametricCallback(stopIntakeT,()->setState(Inferno.RobotState.STOPPED).run())
                             .addParametricCallback(shootSlowT,()->follower.setMaxPower(shootSlowAmount))
+                            .addParametricCallback(0.93,()->classifierBallCount = vision.getGroundAndClassifierArtifacts(follower.getPose()).get(1).size())
                             .addParametricCallback(0.93,()->follower.setMaxPower(1.0)),
     true), shoot
     );
@@ -200,7 +199,7 @@ public class ClosePrimeSigmaConstants {
                                     follower::getPose,
                                     getPose("firstSpike")
                             )
-                    ).setConstantHeadingInterpolation(getHeading("firstSpike"))
+                    ).setTangentHeadingInterpolation()
                     .addParametricCallback(slowDownT,()->follower.setMaxPower(slowDownAmount))
                     .addPath(
                             new BezierLine(
@@ -211,6 +210,7 @@ public class ClosePrimeSigmaConstants {
                     .addParametricCallback(speedUpT,()->follower.setMaxPower(1.0))
                     .addParametricCallback(stopIntakeT,()->setState(Inferno.RobotState.STOPPED).run())
                     .addParametricCallback(fourthShootSlowT,()->follower.setMaxPower(shootSlowAmount))
+                    .addParametricCallback(0.93,()->classifierBallCount = vision.getGroundAndClassifierArtifacts(follower.getPose()).get(1).size())
                     .addParametricCallback(0.93,()->follower.setMaxPower(1.0)),true), shoot
     );
     public static Command thirdSpike =  new SequentialCommand(new PedroCommand(
@@ -237,6 +237,7 @@ public class ClosePrimeSigmaConstants {
                             new HeadingInterpolator.PiecewiseNode(0.7,1.0,HeadingInterpolator.constant(getHeading("shoot")))
                     ))
                     .addParametricCallback(speedUpT,()->follower.setMaxPower(1.0))
+                    .addParametricCallback(0.93,()->classifierBallCount = vision.getGroundAndClassifierArtifacts(follower.getPose()).get(1).size())
                     .addParametricCallback(stopIntakeT,()->setState(Inferno.RobotState.STOPPED).run()),true), shoot);
     public static Command park = new SequentialCommand(setState(null),
             new PedroCommand(b->
@@ -293,8 +294,26 @@ public class ClosePrimeSigmaConstants {
         Inferno.alliance = alliance;
         gamePhase = Inferno.GamePhase.AUTO;
         Pedro.createFollower(getPose("start"));
+        pathList = new ArrayList<>(Arrays.asList(
+                preloadShoot,
+                secondSpike,
+                gate,
+                gate,
+                gate,
+                gate,
+                firstSpike
+        ));
+        pathListDisplay = new ArrayList<>(Arrays.asList(
+                "preloadShoot",
+                "secondSpike",
+                "gate",
+                "gate",
+                "gate",
+                "gate",
+                "firstSpike"
+        ));
         executor.setWriteToTelemetry(()->{
-                telemetry.addData("Sorting", airSorting);
+                telemetry.addData("Airsorting", airSorting);
                 telemetry.addData("Offset", turretYaw.get("turretYawTop").getOffset());
                 telemetry.addLine("");
                 telemetry.addLine("A: First Spike");
@@ -362,10 +381,10 @@ public class ClosePrimeSigmaConstants {
         turretOffsetFromAuto = turretYaw.get("turretYawTop").getOffset() + YAW_FIGHT;
         Components.activateActuatorControl();
         executor.setWriteToTelemetry(()->{
+            telemetry.addData("Motif",Arrays.asList(motif));
             telemetry.addData("Yaw Target", turretYaw.get("turretYawTop").getTarget());
             telemetry.addData("Target Point", List.of(targetPoint));
             telemetry.addData("Pose Heading", follower.getHeading());
-            telemetry.addData("Motif",Arrays.asList(motif));
             telemetry.addLine("");
             telemetry.addData("Target Flywheel Velocity", targetFlywheelVelocity);
             telemetry.addData("Flywheel Velocity", flywheel.get("flywheelLeft").getVelocity());

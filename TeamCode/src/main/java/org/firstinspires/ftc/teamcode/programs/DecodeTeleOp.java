@@ -120,7 +120,6 @@ public class DecodeTeleOp extends LinearOpMode {
         breakFollowing();
         Command aprilTag = new AprilTagRelocalize();
         PressCommand pressCommand = new PressCommand(
-                new IfThen(()->gamepad2.dpad_left,setState(RobotState.EXPEL)),
                 new IfThen(()->gamepad2.dpad_right,toggleShotType()),
                 new IfThen(()->gamepad2.y,new InstantCommand(()->classifierBallCount=vision.getGroundAndClassifierArtifacts(follower.getPose()).get(1).size())),
                 new IfThen(()->gamepad2.x,new InstantCommand(()->classifierBallCount=0)),
@@ -137,10 +136,8 @@ public class DecodeTeleOp extends LinearOpMode {
                                 new IfThen(()->gamepad1.left_bumper, setState(RobotState.INTAKE_BACK)),
                                 new IfThen(()->gamepad1.right_trigger>0.5, new InstantCommand(()->{transfer.reset(); setState(RobotState.SHOOTING).run();})),
                                 new IfThen(()->gamepad1.left_trigger>0.5, setState(RobotState.STOPPED)),
-                                new IfThen(()->gamepad1.b, setState(RobotState.INTAKE_FRONT_AND_SHOOT)),
-                                new IfThen(()->gamepad1.x, setState(RobotState.INTAKE_BACK_AND_SHOOT)),
-                                new IfThen(()->gamepad1.a, autoGateIntake),
-                                new IfThen(()->gamepad1.y, autoShoot)
+                                new IfThen(()->gamepad1.b, setState(RobotState.INTAKE_AND_SHOOT)),
+                                new IfThen(()->gamepad1.a, setState(RobotState.EXPEL))
                         ),
                         pressCommand,
                         Commands.triggeredToggleCommand(()->gamepad2.left_stick_button,new ContinuousCommand(()->{}),panic),

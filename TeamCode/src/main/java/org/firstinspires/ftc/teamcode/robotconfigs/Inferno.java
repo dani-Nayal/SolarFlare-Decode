@@ -215,8 +215,8 @@ public class Inferno implements RobotConfig{
                         new ControlSystem<>(new String[]{"targetVelocity"}, List.of(() -> targetFlywheelVelocity), leftVelocityPID, new CustomFeedforward(1.057, ()->targetFlywheelVelocity/MaxVelRegression.regressFormula(voltageSensorRead.get())),
                                 new CustomFeedforward(0.055, ()->{if (useVelFeedforward && Math.abs(targetFlywheelVelocity-flywheel.get("flywheelLeft").getVelocity())>40) return getFlywheelVelProjected(); else return 0.0;}),
                                 new Clamp(), new CustomFeedforward(1, ()->{
-                                    if (((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()<targetFlywheelVelocity-65)) {return 1.0;}
-                                    if ((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+10){return -1.0;}
+                                    if (((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()<targetFlywheelVelocity-65)) {return 1.0;}
+                                    if ((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+10){return -1.0;}
                                     else if (flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+45){return -1.0;}
                                     else {return 0.0;}}),
                                 new Clamp()
@@ -225,8 +225,8 @@ public class Inferno implements RobotConfig{
                         new ControlSystem<>(new String[]{"targetVelocity"}, List.of(() -> targetFlywheelVelocity), rightVelocityPID, new CustomFeedforward(1.057, ()->targetFlywheelVelocity/MaxVelRegression.regressFormula(voltageSensorRead.get())),
                                 new CustomFeedforward(0.055, ()->{if (useVelFeedforward && Math.abs(targetFlywheelVelocity-flywheel.get("flywheelLeft").getVelocity())>40) return getFlywheelVelProjected(); else return 0.0;}),
                                 new Clamp(), new CustomFeedforward(1, ()->{
-                                    if (((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()<targetFlywheelVelocity-65)) {return 1.0;}
-                                    else if ((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_FRONT_AND_SHOOT || robotState==RobotState.INTAKE_BACK_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+10){return -1.0;}
+                                    if (((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()<targetFlywheelVelocity-65)) {return 1.0;}
+                                    else if ((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+10){return -1.0;}
                                     else if (flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+45){return -1.0;}
                                     else {return 0.0;}}),
                                 new Clamp()
@@ -271,8 +271,7 @@ public class Inferno implements RobotConfig{
         INTAKE_FRONT,
         INTAKE_BACK,
         SHOOTING,
-        INTAKE_FRONT_AND_SHOOT,
-        INTAKE_BACK_AND_SHOOT
+        INTAKE_AND_SHOOT,
     }
     public enum Alliance{
         RED,
@@ -462,21 +461,13 @@ public class Inferno implements RobotConfig{
             backIntakeGate.instantSetTargetCommand("open"),
             transferGate.instantSetTargetCommand("open")
     );
-    public static final ParallelCommand frontIntakeAndTransfer = new ParallelCommand(
+    public static final ParallelCommand intakeAndTransfer = new ParallelCommand(
             sideRollers.command(servo->servo.setPowerCommand(1.0)),
             transferGate.instantSetTargetCommand("open"),
             frontIntake.setPowerCommand("transfer"),
             backIntake.setPowerCommand("transfer"),
             frontIntakeGate.instantSetTargetCommand("open"),
-            backIntakeGate.instantSetTargetCommand("closed")
-    );
-    public static final ParallelCommand backIntakeAndTransfer = new ParallelCommand(
-            sideRollers.command(servo->servo.setPowerCommand(1.0)),
-            transferGate.instantSetTargetCommand("open"),
-            frontIntake.setPowerCommand("transfer"),
-            backIntake.setPowerCommand("transfer"),
-            backIntakeGate.instantSetTargetCommand("open"),
-            frontIntakeGate.instantSetTargetCommand("closed")
+            backIntakeGate.instantSetTargetCommand("open")
     );
     public static final Command transfer = new ParallelCommand(
             new SequentialCommand(
@@ -519,7 +510,7 @@ public class Inferno implements RobotConfig{
                     dist = Math.sqrt((sotmVirtualTarget[0]-pos.getX())*(sotmVirtualTarget[0]-pos.getX()) + (sotmVirtualTarget[1]-pos.getY())*(sotmVirtualTarget[1]-pos.getY()));
                 }
             }
-            if (useTurretSOTM&&vel.getMagnitude()>2) turret[0] = (HoodRegression.regressFormula(dist,actualVel) - TURRET_PITCH_OFFSET)/TURRET_PITCH_RATIO; else turret[0] = (HoodRegression.regressFormula(dist,targetFlywheelVelocity) - TURRET_PITCH_OFFSET)/TURRET_PITCH_RATIO;
+            if (useTurretSOTM&&vel.getMagnitude()>5) turret[0] = (HoodRegression.regressFormula(dist,actualVel) - TURRET_PITCH_OFFSET)/TURRET_PITCH_RATIO; else turret[0] = (HoodRegression.regressFormula(dist,targetFlywheelVelocity) - TURRET_PITCH_OFFSET)/TURRET_PITCH_RATIO;
             if (shotType==ShotType.AIRSORT) {
                 targetFlywheelVelocity = 1352;
                 turret[0] = currentBallPath==BallPath.HIGH ? (145.2-TURRET_PITCH_OFFSET)/TURRET_PITCH_RATIO: (106.1-TURRET_PITCH_OFFSET)/TURRET_PITCH_RATIO;
@@ -589,8 +580,7 @@ public class Inferno implements RobotConfig{
                     new IfThen(()->robotState==RobotState.EXPEL, expel),
                     new IfThen(()->robotState==RobotState.INTAKE_BACK, backIntakeAction),
                     new IfThen(()->robotState==RobotState.INTAKE_FRONT, frontIntakeAction),
-                    new IfThen(()->robotState==RobotState.INTAKE_BACK_AND_SHOOT, backIntakeAndTransfer),
-                    new IfThen(()->robotState==RobotState.INTAKE_FRONT_AND_SHOOT, frontIntakeAndTransfer),
+                    new IfThen(()->robotState==RobotState.INTAKE_AND_SHOOT, intakeAndTransfer),
                     new IfThen(()->robotState==RobotState.SHOOTING, transfer),
                     new IfThen(()->Objects.isNull(robotState), stopAll)
             ),
@@ -647,11 +637,10 @@ public class Inferno implements RobotConfig{
         }
         if (shootAll) {
             shotLength=0;
-            for (Color color : shotSequence){
+            for (Color color : ballStorage){
                 if (Objects.nonNull(color)){shotLength+=1;}
             }
         }
-
         if (shotLength>0 && Objects.isNull(ballStorage[1])){shotLength+=1;}
         leaveRollersOn=!(shotLength==0 || balls.contains(Color.PURPLE)||balls.contains(Color.GREEN)) || shootAll;
 
@@ -795,7 +784,7 @@ public class Inferno implements RobotConfig{
         return new InstantCommand(()->{if (Inferno.shotType==ShotType.SEMISORT) shotType=ShotType.NORMAL; else shotType=ShotType.SEMISORT;});
     }
     private static abstract class MotifShoot{
-        private final static double SHOT_TIMEOUT = Double.POSITIVE_INFINITY;
+        private final static double SHOT_TIMEOUT = 0.1;
         private final static double POST_DROP_DELAY = 0;
         private final static double DROP_THRESHOLD = 100;
         private final static double RISE_THRESHOLD = 20;
@@ -841,7 +830,7 @@ public class Inferno implements RobotConfig{
                     ArrayList<Command> hoodChanges = new ArrayList<>();
                     for (int i=0;i<ballPaths.size();i++){
                         hoodChanges.add(new InstantCommand(()->{
-                            if (!Objects.isNull(ballPaths.get(0))) currentBallPath = ballPaths.get(0); else currentBallPath = ballPaths.get(1);
+                            if (!Objects.isNull(ballPaths.get(0))) currentBallPath = ballPaths.get(0); else {if (ballPaths.size()==2) currentBallPath = ballPaths.get(1);}
                             ballPaths.remove(0);}));
                         hoodChanges.add(waitForBall);
                     }
