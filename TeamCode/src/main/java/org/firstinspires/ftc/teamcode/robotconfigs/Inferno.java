@@ -58,6 +58,7 @@ public class Inferno implements RobotConfig{
             new BotServo("turretPitchLeft", Servo.Direction.FORWARD, 422,5,180,102),
             new BotServo("turretPitchRight", Servo.Direction.REVERSE, 422,5,180,102)
     );
+    public static final double TRANSFER_SLOWDOWN = 0.7;
     public static final double TURRET_PITCH_RATIO = (double) 48/30;
     public static final double TURRET_PITCH_OFFSET = 47;
     public static final double TURRET_YAW_RATIO = 1.057777777777676767/(48.0/20.0 * 39.0/83.0);
@@ -287,22 +288,20 @@ public class Inferno implements RobotConfig{
             sideRollers.command(servo->servo.setPowerCommand(1.0)),
             new ParallelCommand(
                     transferGate.instantSetTargetCommand("open"),
-                    frontIntake.setPowerCommand("transfer"),
-                    backIntake.setPowerCommand("otherSideTransfer"),
+                    frontIntake.setPowerCommand(()->inFar() ? frontIntake.getKeyPower("transfer")*TRANSFER_SLOWDOWN: frontIntake.getKeyPower("transfer")),
+                    backIntake.setPowerCommand(()->inFar() ? backIntake.getKeyPower("otherSideTransfer")*TRANSFER_SLOWDOWN: backIntake.getKeyPower("otherSideTransfer")),
                     frontIntakeGate.instantSetTargetCommand("closed"),
                     backIntakeGate.instantSetTargetCommand("closed")
             ),
             new SleepCommand(TRANSFER_SELECT_DELAY),
             new ParallelCommand(
-                    frontIntake.setPowerCommand("transfer"),
-                    backIntake.setPowerCommand("sideSelect"),
+                    backIntake.setPowerCommand(()->inFar() ? backIntake.getKeyPower("sideSelect")*TRANSFER_SLOWDOWN: frontIntake.getKeyPower("sideSelect")),
                     frontIntakeGate.instantSetTargetCommand("closed"),
                     backIntakeGate.instantSetTargetCommand("closed")
             ),
             new SleepCommand(TRANSFER_REBOOST_DELAY),
             new ParallelCommand(
-                    frontIntake.setPowerCommand("transfer"),
-                    backIntake.setPowerCommand("transfer"),
+                    backIntake.setPowerCommand(()->inFar() ? backIntake.getKeyPower("transfer")*TRANSFER_SLOWDOWN: backIntake.getKeyPower("transfer")),
                     frontIntakeGate.instantSetTargetCommand("backoff"),
                     backIntakeGate.instantSetTargetCommand("backoff")
             ),
@@ -313,22 +312,20 @@ public class Inferno implements RobotConfig{
             sideRollers.command(servo->servo.setPowerCommand(1.0)),
             new ParallelCommand(
                     transferGate.instantSetTargetCommand("open"),
-                    frontIntake.setPowerCommand("otherSideTransfer"),
-                    backIntake.setPowerCommand("transfer"),
+                    frontIntake.setPowerCommand(()->inFar() ? frontIntake.getKeyPower("otherSideTransfer")*TRANSFER_SLOWDOWN: frontIntake.getKeyPower("otherSideTransfer")),
+                    backIntake.setPowerCommand(()->inFar() ? backIntake.getKeyPower("transfer")*TRANSFER_SLOWDOWN: backIntake.getKeyPower("transfer")),
                     frontIntakeGate.instantSetTargetCommand("closed"),
                     backIntakeGate.instantSetTargetCommand("closed")
             ),
             new SleepCommand(TRANSFER_SELECT_DELAY),
             new ParallelCommand(
-                    backIntake.setPowerCommand("transfer"),
-                    frontIntake.setPowerCommand("sideSelect"),
+                    frontIntake.setPowerCommand(()->inFar() ? frontIntake.getKeyPower("sideSelect")*TRANSFER_SLOWDOWN: frontIntake.getKeyPower("sideSelect")),
                     frontIntakeGate.instantSetTargetCommand("closed"),
                     backIntakeGate.instantSetTargetCommand("closed")
             ),
             new SleepCommand(TRANSFER_REBOOST_DELAY),
             new ParallelCommand(
-                    frontIntake.setPowerCommand("transfer"),
-                    backIntake.setPowerCommand("transfer"),
+                    frontIntake.setPowerCommand(()->inFar() ? frontIntake.getKeyPower("transfer")*TRANSFER_SLOWDOWN: frontIntake.getKeyPower("transfer")),
                     frontIntakeGate.instantSetTargetCommand("backoff"),
                     backIntakeGate.instantSetTargetCommand("backoff")
             ),
@@ -589,6 +586,9 @@ public class Inferno implements RobotConfig{
             new InstantCommand(()->{if ((robotState!=RobotState.SHOOTING && robotState!=RobotState.STOPPED && Objects.nonNull(robotState)) || shotType!=ShotType.AIRSORT){currentBallPath=BallPath.LOW;}}),
             setShooter
     );
+    private static boolean inFar(){
+        return follower.getPose().distanceFrom(new Pose(targetPoint[0], targetPoint[1]))>130;
+    }
     private static void colorSensorRead(int index){
         double [] greenCenter = new double[]{0.23,0.54,0.23};
         double [] purpleCenter = new double[]{0.4,0.2,0.4};
