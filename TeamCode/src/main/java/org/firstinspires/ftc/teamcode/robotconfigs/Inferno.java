@@ -89,7 +89,7 @@ public class Inferno implements RobotConfig{
     public static final double[] sotmVirtualTarget = new double[3];
     public static boolean motifShootAll = true;
     private final static double TRANSFER_SELECT_DELAY = 0.035;
-    private final static double TRANSFER_REBOOST_DELAY = 0.0967;
+    private final static double TRANSFER_REBOOST_DELAY = 0.12;
     public static Color[] motif = new Color[]{Color.PURPLE,Color.GREEN,Color.PURPLE};
     public static double classifierBallCount = 0;
     public static Alliance alliance = Alliance.BLUE;
