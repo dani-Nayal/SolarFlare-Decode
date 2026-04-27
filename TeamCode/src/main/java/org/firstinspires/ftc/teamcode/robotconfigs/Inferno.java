@@ -507,7 +507,7 @@ public class Inferno implements RobotConfig{
             double actualVel = Math.max(flywheel.get("flywheelLeft").getVelocity(), round(targetFlywheelVelocity/20.0)*20.0-80);
             if (useTurretSOTM){
                 for (int i=0;i<5;i++){
-                    double shotTime = ShotTimeRegression.regressFormula(dist, targetFlywheelVelocity);
+                    double shotTime = ShotTimeRegression.regressFormula(dist, targetFlywheelVelocity) - 0.05;
                     sotmVirtualTarget[0] = targetPoint[0]-vel.getXComponent()*shotTime; sotmVirtualTarget[1] = targetPoint[1]-vel.getYComponent()*shotTime;
                     dist = Math.sqrt((sotmVirtualTarget[0]-pos.getX())*(sotmVirtualTarget[0]-pos.getX()) + (sotmVirtualTarget[1]-pos.getY())*(sotmVirtualTarget[1]-pos.getY()));
                 }

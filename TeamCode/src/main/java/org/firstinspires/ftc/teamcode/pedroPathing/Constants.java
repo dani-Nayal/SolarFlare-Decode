@@ -24,7 +24,7 @@ public class Constants {
             .lateralZeroPowerAcceleration(-68.69912366702141)
             .headingPIDFCoefficients(new PIDFCoefficients(1.1,0.001,0.00001,0))
             .centripetalScaling(0)
-            .predictiveBrakingCoefficients(new PredictiveBrakingCoefficients(0.04,0.10167110976556211,0.0018081917193876961));
+            .predictiveBrakingCoefficients(new PredictiveBrakingCoefficients(0.04,0.112767110976556211,0.0014754081917193876961));
 
     public static MecanumConstants driveConstants = new MecanumConstants()
             .leftFrontMotorName("leftFront")
