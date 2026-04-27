@@ -19,12 +19,12 @@ import org.firstinspires.ftc.teamcode.robotconfigs.Inferno;
 public class Constants {
 
     public static FollowerConstants followerConstants = new FollowerConstants()
-            .mass(15.05927)
+            .mass(14.7)
             .forwardZeroPowerAcceleration(-31.9940432459363933)
             .lateralZeroPowerAcceleration(-68.69912366702141)
             .headingPIDFCoefficients(new PIDFCoefficients(1.1,0.001,0.00001,0))
             .centripetalScaling(0)
-            .predictiveBrakingCoefficients(new PredictiveBrakingCoefficients(0.045,0.10624854404399096,0.001604334137270121));
+            .predictiveBrakingCoefficients(new PredictiveBrakingCoefficients(0.04,0.10167110976556211,0.0018081917193876961));
 
     public static MecanumConstants driveConstants = new MecanumConstants()
             .leftFrontMotorName("leftFront")
@@ -35,8 +35,8 @@ public class Constants {
             .leftRearMotorDirection(DcMotorSimple.Direction.REVERSE)
             .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
             .rightRearMotorDirection(DcMotorSimple.Direction.FORWARD)
-            .xVelocity(71.55921082984744)
-            .yVelocity(55.24798439806841);
+            .xVelocity(67.55921082984744)
+            .yVelocity(53.24798439806841);
 
     public static PinpointConstants localizerConstants = new PinpointConstants()
             .forwardPodY(-3.76925)
