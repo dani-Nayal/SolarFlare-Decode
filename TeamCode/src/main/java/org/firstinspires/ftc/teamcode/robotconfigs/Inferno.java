@@ -90,6 +90,8 @@ public class Inferno implements RobotConfig{
     public static boolean motifShootAll = true;
     private final static double TRANSFER_SELECT_DELAY = 0.035;
     private final static double TRANSFER_REBOOST_DELAY = 0.12;
+    private final static double SLOW_TRANSFER_POWER_CAP = 0.7;
+
     public static Color[] motif = new Color[]{Color.PURPLE,Color.GREEN,Color.PURPLE};
     public static double classifierBallCount = 0;
     public static Alliance alliance = Alliance.BLUE;
@@ -430,7 +432,7 @@ public class Inferno implements RobotConfig{
                                     ),
                                     new SleepCommand(0.35),
                                     transferGate.instantSetTargetCommand("open"),
-                                    new SleepCommand(0.09)
+                                    new SleepCommand(0.07)
                             )
                     )
             ),
@@ -970,8 +972,8 @@ public class Inferno implements RobotConfig{
         }
     }
     public abstract static class VelRegression {
-        private static final double M = 5.5609257;
-        private static final double B = 853.830378279798;
+        private static final double M = 5.84257;
+        private static final double B = 790.830378279798;
         private static final double M_MOTIF = 5.5609257;
         private static final double B_MOTIF = 853.830378279798;
         public static double regressFormula(double dist){

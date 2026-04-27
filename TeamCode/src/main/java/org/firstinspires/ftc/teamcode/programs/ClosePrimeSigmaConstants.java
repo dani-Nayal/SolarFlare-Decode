@@ -7,6 +7,7 @@ import static org.firstinspires.ftc.teamcode.base.Components.initialize;
 import static org.firstinspires.ftc.teamcode.base.Components.telemetry;
 import static org.firstinspires.ftc.teamcode.pedroPathing.Pedro.follower;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.ShotType.AIRSORT;
+import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.ShotType.NORMAL;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_PITCH_OFFSET;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_PITCH_RATIO;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_YAW_OFFSET;
@@ -74,12 +75,13 @@ public class ClosePrimeSigmaConstants {
     public static final double speedUpT = 0.05;
     public static final double stopIntakeT = 0.17;
     public static final double slowDownAmount = 1.0;
-    public static final double gateIntakeTimeout = 1.5;
+    public static double gateIntakeTimeout = 1.5;
     public static final double secondShootSlowT = 0.75;
     public static final double fourthShootSlowT = 0.75;
     public static final double shootSlowT = 0.8;
     public static final double shootSlowAmount = 1.0;
     public static boolean airSorting = false;
+    public static boolean soloAuto = false;
     public static Command shoot = new SequentialCommand(
             new SleepCommand(PRE_SHOT_TIME),
             setState(Inferno.RobotState.SHOOTING),
@@ -283,6 +285,7 @@ public class ClosePrimeSigmaConstants {
     }
     public static void runOpMode(Inferno.Alliance alliance, LinearOpMode opMode){
         airSorting = false;
+        soloAuto = false;
         poses.put("shoot",new Pose(SHOOT[0],SHOOT[1],SHOOT[2]));
         initialize(opMode,new Inferno(),true,true);
         Inferno.useTurretSOTM = false;
@@ -314,6 +317,7 @@ public class ClosePrimeSigmaConstants {
         ));
         executor.setWriteToTelemetry(()->{
                 telemetry.addData("Airsorting", airSorting);
+                telemetry.addData("Solo Auto?", soloAuto);
                 telemetry.addData("Offset", turretYaw.get("turretYawTop").getOffset());
                 telemetry.addLine("");
                 telemetry.addLine("A: First Spike");
@@ -344,6 +348,7 @@ public class ClosePrimeSigmaConstants {
         executor.setCommands(
                 new SequentialCommand(new SleepCommand(1.0),new InstantCommand(Inferno::initTurretYawPosition)),
                 Commands.triggeredToggleCommand(()->gamepad1.start, new InstantCommand(()->airSorting=true), new InstantCommand(()->airSorting=false)),
+                Commands.triggeredToggleCommand(()->gamepad1.dpad_left, new InstantCommand(()->soloAuto=true), new InstantCommand(()->soloAuto=false)),
                 turretYaw.command(servo->servo.instantSetTargetCommand(Math.toDegrees(atan2(141.5-follower.getPose().getY(), targetX-follower.getPose().getX()) - follower.getHeading())*TURRET_YAW_RATIO+TURRET_YAW_OFFSET)),
                 turretYaw.command(servo->servo.triggeredDynamicOffsetCommand(()->gamepad1.left_trigger>0.2,()->gamepad1.right_trigger>0.2,0.05)),
                 new RunResettingLoop(new PressCommand(
@@ -414,9 +419,10 @@ public class ClosePrimeSigmaConstants {
                     new InstantCommand(()->poses.put("shoot",new Pose(MOTIF_SHOOT[0], MOTIF_SHOOT[1], MOTIF_SHOOT[2]))),
                     setShotType(AIRSORT))
             );}
-            else {pathList.add(pathList.size()-3,setShotType(AIRSORT));}
+            else {pathList.add(pathList.size()-3,setShotType(NORMAL));}
         }
         if (!pathList.isEmpty() && !airSorting) pathList.add(pathList.size()-1,new InstantCommand(()->poses.put("shoot",new Pose(FINAL_SHOOT[0], FINAL_SHOOT[1], FINAL_SHOOT[2]))));
+        if (soloAuto) {gateIntakeTimeout = 2;} else{gateIntakeTimeout=0.8;}
         SequentialCommand mainPath = new SequentialCommand(pathList.toArray(new Command[0]));
         executor.setCommands(
                 new ParallelCommand(findMotif, new SequentialCommand(new SleepCommand(5),new InstantCommand(findMotif::stop))),
