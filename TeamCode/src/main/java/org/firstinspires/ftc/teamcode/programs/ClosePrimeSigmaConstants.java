@@ -6,6 +6,7 @@ import static org.firstinspires.ftc.teamcode.base.Components.gamepad1;
 import static org.firstinspires.ftc.teamcode.base.Components.initialize;
 import static org.firstinspires.ftc.teamcode.base.Components.telemetry;
 import static org.firstinspires.ftc.teamcode.pedroPathing.Pedro.follower;
+import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.ShotType.AIRSORT;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_PITCH_OFFSET;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_PITCH_RATIO;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_YAW_OFFSET;
@@ -392,9 +393,9 @@ public class ClosePrimeSigmaConstants {
         if (pathList.size()>4) {
             if (airSorting) {pathList.add(pathList.size()-3,new ParallelCommand(
                     new InstantCommand(()->poses.put("shoot",new Pose(MOTIF_SHOOT[0], MOTIF_SHOOT[1], MOTIF_SHOOT[2]))),
-                    setShotType(Inferno.ShotType.AIRSORT))
+                    setShotType(AIRSORT))
             );}
-            else {pathList.add(pathList.size()-3,setShotType(Inferno.ShotType.AIRSORT));}
+            else {pathList.add(pathList.size()-3,setShotType(AIRSORT));}
         }
         if (!pathList.isEmpty() && !airSorting) pathList.add(pathList.size()-1,new InstantCommand(()->poses.put("shoot",new Pose(FINAL_SHOOT[0], FINAL_SHOOT[1], FINAL_SHOOT[2]))));
         SequentialCommand mainPath = new SequentialCommand(pathList.toArray(new Command[0]));
@@ -419,7 +420,7 @@ public class ClosePrimeSigmaConstants {
                 loopFSM,
                 new RunResettingLoop(
                     new InstantCommand(
-                            ()->targetFlywheelVelocity = Inferno.VelRegression.regressFormula(getPose("shoot").distanceFrom(new Pose(targetPoint[0],targetPoint[1])))
+                            ()->{if (!(shotType==AIRSORT)) targetFlywheelVelocity = Inferno.VelRegression.regressFormula(getPose("shoot").distanceFrom(new Pose(targetPoint[0],targetPoint[1])));}
                     )
                 )
         );

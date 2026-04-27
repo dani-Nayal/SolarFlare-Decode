@@ -520,7 +520,10 @@ public class Inferno implements RobotConfig{
                 }
             }
             if (useTurretSOTM&&vel.getMagnitude()>2) turret[0] = (HoodRegression.regressFormula(dist,actualVel) - TURRET_PITCH_OFFSET)/TURRET_PITCH_RATIO; else turret[0] = (HoodRegression.regressFormula(dist,targetFlywheelVelocity) - TURRET_PITCH_OFFSET)/TURRET_PITCH_RATIO;
-            if (currentBallPath==BallPath.HIGH) turret[0] = 70;
+            if (shotType==ShotType.AIRSORT) {
+                targetFlywheelVelocity = 1352;
+                turret[0] = currentBallPath==BallPath.HIGH ? (145.2-TURRET_PITCH_OFFSET)/TURRET_PITCH_RATIO: (106.1-TURRET_PITCH_OFFSET)/TURRET_PITCH_RATIO;
+            }
             turret[1] = Math.toDegrees(Math.atan2(sotmVirtualTarget[1] - pos.getY(), sotmVirtualTarget[0] - pos.getX()));
             sotmOffset = turret[1] - Math.toDegrees(Math.atan2(targetPoint[1] - pos.getY(), targetPoint[0] - pos.getX()));
             double heading = Math.toDegrees(follower.getHeading());
@@ -591,7 +594,7 @@ public class Inferno implements RobotConfig{
                     new IfThen(()->robotState==RobotState.SHOOTING, transfer),
                     new IfThen(()->Objects.isNull(robotState), stopAll)
             ),
-            new InstantCommand(()->{if ((robotState!=RobotState.SHOOTING && robotState!=RobotState.STOPPED && Objects.nonNull(robotState)) || shotType==ShotType.NORMAL){currentBallPath=BallPath.LOW;}}),
+            new InstantCommand(()->{if ((robotState!=RobotState.SHOOTING && robotState!=RobotState.STOPPED && Objects.nonNull(robotState)) || shotType!=ShotType.AIRSORT){currentBallPath=BallPath.LOW;}}),
             setShooter
     );
     private static void colorSensorRead(int index){
