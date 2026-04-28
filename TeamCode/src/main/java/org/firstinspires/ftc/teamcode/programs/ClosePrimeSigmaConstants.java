@@ -170,8 +170,8 @@ public class ClosePrimeSigmaConstants {
                                 getPose("gateOpen")
                         )
                 ).setHeadingInterpolation(HeadingInterpolator.piecewise(
-                        new HeadingInterpolator.PiecewiseNode(0.0,0.5,HeadingInterpolator.tangent),
-                        HeadingInterpolator.PiecewiseNode.linear(0.5,0.7, Math.atan2(getPose("gateOpen").getY() - getPose("shoot").getY(), getPose("gateOpen").getX() - getPose("shoot").getX()), getHeading("gateOpen")),
+                        new HeadingInterpolator.PiecewiseNode(0.0,0.4,HeadingInterpolator.tangent),
+                        HeadingInterpolator.PiecewiseNode.linear(0.4,0.7, Math.atan2(getPose("gateOpen").getY() - getPose("shoot").getY(), getPose("gateOpen").getX() - getPose("shoot").getX()), getHeading("gateOpen")),
                         new HeadingInterpolator.PiecewiseNode(0.7,1.0,HeadingInterpolator.constant(getHeading("gateOpen")))
                 )),
     true).setTimeout(2),
@@ -349,7 +349,7 @@ public class ClosePrimeSigmaConstants {
                 new SequentialCommand(new SleepCommand(1.0),new InstantCommand(Inferno::initTurretYawPosition)),
                 Commands.triggeredToggleCommand(()->gamepad1.start, new InstantCommand(()->airSorting=true), new InstantCommand(()->airSorting=false)),
                 Commands.triggeredToggleCommand(()->gamepad1.dpad_left, new InstantCommand(()->soloAuto=true), new InstantCommand(()->soloAuto=false)),
-                turretYaw.command(servo->servo.instantSetTargetCommand(Math.toDegrees(atan2(141.5-follower.getPose().getY(), targetX-follower.getPose().getX()) - follower.getHeading())*TURRET_YAW_RATIO+TURRET_YAW_OFFSET)),
+                turretYaw.command(servo->servo.instantSetTargetCommand(0*TURRET_YAW_RATIO+TURRET_YAW_OFFSET)),
                 turretYaw.command(servo->servo.triggeredDynamicOffsetCommand(()->gamepad1.left_trigger>0.2,()->gamepad1.right_trigger>0.2,0.05)),
                 new RunResettingLoop(new PressCommand(
                         new IfThen(()->gamepad1.dpad_up,new InstantCommand(()->{

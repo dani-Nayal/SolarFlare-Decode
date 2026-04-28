@@ -129,7 +129,7 @@ public class DecodeTeleOp extends LinearOpMode {
                 new IfThen(()->gamepad2.left_bumper, new InstantCommand(()->follower.setPose(hpRelocalizePose)))
         );
         executor.setCommands(
-                findMotif,
+                new SequentialCommand(findMotif, new InstantCommand(()->vision.stopLimelight())),
                 new RunResettingLoop(
                         new PressCommand(
                                 new IfThen(()->gamepad1.right_bumper, setState(RobotState.INTAKE_FRONT)),
