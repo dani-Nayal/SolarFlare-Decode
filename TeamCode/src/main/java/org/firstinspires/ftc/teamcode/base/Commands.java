@@ -237,17 +237,22 @@ public abstract class Commands { //Command-based system
     }
 
     public static class SleepCommand extends Command { //Sleeps for a set time
-        private final double time;
+        private double time;
+        private final Supplier<Double> getTime;
         private double startTime;
+        public SleepCommand(Supplier<Double> getTime) {
+            this.getTime = getTime;
+        }
 
         public SleepCommand(double time) {
-            this.time = time;
+            this.getTime = ()->time;
         }
 
         @Override
         protected boolean runProcedure() {
             if (isStart()) {
                 startTime = timer.time();
+                time = getTime.get();
             }
             return (timer.time() - startTime) < time;
         }

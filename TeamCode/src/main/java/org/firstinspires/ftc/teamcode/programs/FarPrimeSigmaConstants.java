@@ -132,11 +132,7 @@ public class FarPrimeSigmaConstants {
                             .setTangentHeadingInterpolation()
                             .addParametricCallback(slowDownT,()->follower.setMaxPower(slowDownAmount))
                         .addPath(new BezierLine(getPose("firstSpike"), getPose("firstShoot")))
-                            .setHeadingInterpolation(HeadingInterpolator.piecewise(
-                                    new HeadingInterpolator.PiecewiseNode(0.0,0.4,HeadingInterpolator.tangent.reverse()),
-                                    HeadingInterpolator.PiecewiseNode.linear(0.4,0.7, getHeading("firstSpike"), getHeading("firstShoot")),
-                                    new HeadingInterpolator.PiecewiseNode(0.7,1.0,HeadingInterpolator.constant(getHeading("firstShoot")))
-                            ))
+                            .setTangentHeadingInterpolation().setReversed()
                             .addParametricCallback(speedUpT,()->follower.setMaxPower(1.0))
                             .addParametricCallback(stopIntakeT,()->setState(Inferno.RobotState.STOPPED).run()),
                     true
