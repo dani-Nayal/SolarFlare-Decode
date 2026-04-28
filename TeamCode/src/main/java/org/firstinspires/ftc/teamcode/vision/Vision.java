@@ -72,66 +72,6 @@ public class Vision {
         localizationAprilTags.add(24);
     }
 
-    public List<Artifact> getRelativeArtifactDescriptors(){
-        if (!limelight.isRunning()){
-            limelight.start();
-        }
-        limelight.pipelineSwitch(NN_PIPELINE_INDEX);
-
-        List<Artifact> artifacts = new ArrayList<>(); // Output array
-        LLResult result = limelight.getLatestResult();
-
-        if (result == null || !result.isValid()) {
-            return artifacts;
-        }
-
-        for (LLResultTypes.DetectorResult detectorResult : result.getDetectorResults()) {
-            String className = detectorResult.getClassName();
-            List<List<Double>> corners = detectorResult.getTargetCorners();
-
-            telemetry.addData("corner 0", corners.get(0));
-            telemetry.addData("corner 1", corners.get(1));
-            telemetry.addData("corner 2", corners.get(2));
-            telemetry.addData("corner 3", corners.get(3));
-
-            double targetX = getBottomCenterXPixels(cameraOrientation, corners);
-            double targetY = getBottomCenterYPixels(cameraOrientation, corners);
-
-            double xOffset = targetX - cxNN;
-            double yOffset = cyNN - targetY;
-
-            double tx = Math.toDegrees(Math.atan(xOffset / fxNN));
-            double ty = Math.toDegrees(Math.atan(yOffset / fyNN));
-
-            telemetry.addData("tx", tx);
-            telemetry.addData("ty", ty);
-            telemetry.addData("cx", cxNN);
-            telemetry.addData("cy", cyNN);
-            telemetry.addData("targetX", targetX);
-            telemetry.addData("targetY", targetY);
-            telemetry.addData("xOffset", xOffset);
-            telemetry.addData("yOffset", yOffset);
-
-            double verticalAngleDeg = 90 + ty + cameraPoseOnRobot.getOrientation().getPitch(AngleUnit.DEGREES);
-
-            telemetry.addData("vertical angle", verticalAngleDeg);
-
-            double depth = cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).z * Math.tan(Math.toRadians(verticalAngleDeg));
-
-            double horizontal = depth * Math.tan(Math.toRadians(tx + cameraPoseOnRobot.getOrientation().getYaw(AngleUnit.DEGREES)));
-
-            depth += cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).x;
-            horizontal += cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).y;
-
-            Artifact artifact = new Artifact(horizontal, depth, className);
-            artifact.setBottomCenterXPixels(targetX);
-            artifact.setBottomCenterYPixels(targetY);
-            artifacts.add(artifact);
-
-        }
-        return artifacts;
-    }
-
     public List<Artifact> getArtifacts(Pose botPosePedro){
         if (!limelight.isRunning()) limelight.start();
         if (limelight.getStatus().getPipelineIndex() != NN_PIPELINE_INDEX) limelight.pipelineSwitch(NN_PIPELINE_INDEX);
@@ -625,150 +565,6 @@ public class Vision {
         return true;
     }
 
-    public double getAngleToArtifactDegrees(Artifact firstArtifact, Artifact secondArtifact){
-        double x1 = firstArtifact.getTopCenterXPixels();
-        double y1 = firstArtifact.getTopCenterYPixels();
-        double x2 = secondArtifact.getTopCenterXPixels();
-        double y2 = secondArtifact.getTopCenterYPixels();
-
-        double deltaY = -(y2 - y1); // Y is flipped in image coordinates
-        double deltaX = x2 - x1;
-
-        double angle = Math.atan2(deltaY, deltaX);
-
-        return normalizeHeading360Degrees(angle);
-    }
-
-    public double pointToLineDistance(
-            double x1, double y1,
-            double x2, double y2,
-            double px, double py) {
-
-        double dx = x2 - x1;
-        double dy = y2 - y1;
-
-        double numerator = Math.abs(dx * (y1 - py) - dy * (x1 - px));
-        double denominator = Math.hypot(dx, dy);
-
-        if (denominator < 1e-6) return Double.POSITIVE_INFINITY;
-
-        return numerator / denominator;
-    }
-
-    public boolean artifactsInLine(List<Artifact> artifacts, double lineDistTolerance){
-        if (artifacts.size() < 3) return true;
-
-        List<Artifact> bestArtifacts = new ArrayList<>();
-
-        for (int i = 0; i < artifacts.size(); i++) {
-            for (int j = i + 1; j < artifacts.size(); j++) {
-                Artifact artifact1 = artifacts.get(i);
-                Artifact artifact2 = artifacts.get(j);
-
-                List<Artifact> collinearArtifacts = new ArrayList<>();
-
-                for (Artifact artifact : artifacts) {
-                    double dist = pointToLineDistance(artifact1.getTopCenterXPixels(), artifact1.getTopCenterYPixels(), artifact2.getTopCenterXPixels(), artifact2.getTopCenterYPixels(), artifact.getTopCenterXPixels(), artifact.getTopCenterYPixels());
-
-                    if (dist < lineDistTolerance) {
-                        collinearArtifacts.add(artifact);
-                    }
-                }
-
-                if (collinearArtifacts.isEmpty()) continue;
-
-                if (collinearArtifacts.size() > bestArtifacts.size()) {
-                    bestArtifacts = collinearArtifacts;
-                }
-            }
-        }
-        return (bestArtifacts.size() > 3);
-    }
-
-
-    public List<Artifact> getClassifierArtifacts(List<Artifact> artifacts){
-        if (artifacts.isEmpty()) return artifacts;
-
-        double lineDistTolerance = 30;
-        double distTolerance = 30;
-
-        List<Artifact> bestArtifacts = new ArrayList<>();
-        double bestAverageY = Double.POSITIVE_INFINITY;
-
-        for (int i = 0; i < artifacts.size(); i++){
-            for (int j = i + 1; j < artifacts.size(); j++) {
-                Artifact artifact1 = artifacts.get(i);
-                Artifact artifact2 = artifacts.get(j);
-
-                List<Artifact> collinearArtifacts = new ArrayList<>();
-
-                for (Artifact artifact : artifacts) {
-                    double dist = pointToLineDistance(artifact1.getTopCenterXPixels(), artifact1.getTopCenterYPixels(), artifact2.getTopCenterXPixels(), artifact2.getTopCenterYPixels(), artifact.getTopCenterXPixels(), artifact.getTopCenterYPixels());
-
-                    if (dist < lineDistTolerance){
-                        collinearArtifacts.add(artifact);
-                    }
-                }
-
-                if (collinearArtifacts.isEmpty()) continue;
-
-                double sumY = 0;
-
-                for (Artifact artifact : collinearArtifacts){
-                    sumY += artifact.getCenterYPixels();
-                }
-
-                double averageY = sumY / collinearArtifacts.size();
-
-                if (averageY < bestAverageY && artifactsEvenlySpaced(collinearArtifacts, distTolerance)){ // Less than because in camera y increases downward, we want artifacts that are highest in the image
-                    bestArtifacts = collinearArtifacts;
-                    bestAverageY = averageY;
-                }
-
-            }
-        }
-        return bestArtifacts;
-    }
-
-    public List<Artifact> getClassifierArtifacts2(List<Artifact> artifacts){
-        if (artifacts.isEmpty()) return null;
-
-        List<Artifact> classifierArtifacts = new ArrayList<>();
-
-        double yMax = Double.NEGATIVE_INFINITY;
-        double yMin = Double.POSITIVE_INFINITY;
-
-        if (!artifactsEvenlySpaced(artifacts, 30)) {
-            for (Artifact artifact : artifacts) {
-                double y = artifact.getTopCenterYPixels();
-
-                if (y > yMax) yMax = y;
-                else if (y < yMin) yMin = y;
-            }
-            double midY = (yMax + yMin) / 2;
-
-            for (Artifact artifact : artifacts) {
-                double y = artifact.getTopCenterYPixels();
-                if (y < midY) classifierArtifacts.add(artifact);
-            }
-            return classifierArtifacts;
-        }
-        else if (artifactsInLine(artifacts, 30)) return artifacts;
-        else return new ArrayList<>();
-    }
-
-
-    public List<Artifact> getGroundArtifacts(List<Artifact> artifacts){
-        if (artifacts.isEmpty()) return artifacts;
-
-        List<Artifact> classifierArtifacts = getClassifierArtifacts(artifacts);
-
-        artifacts.removeAll(classifierArtifacts);
-
-        return artifacts;
-
-    }
-
     public double getNumArtifactsInClassifier(List<Artifact> classifierArtifacts){
         return classifierArtifacts.size();
     }
@@ -808,56 +604,6 @@ public class Vision {
         return points;
     }
 
-    public List<Artifact> getClassifierArtifacts3(List<Artifact> artifacts, Inferno.Alliance alliance){
-        if (artifacts == null || artifacts.isEmpty()) return null;
-        if (!limelight.isRunning()) limelight.start();
-
-        List<Artifact> classifierArtifacts = new ArrayList<>();
-
-        if (alliance == Inferno.Alliance.RED){
-            if (limelight.getStatus().getPipelineIndex() != CLASSIFIER_RED_PIPELINE_INDEX) limelight.pipelineSwitch(CLASSIFIER_RED_PIPELINE_INDEX);
-        }
-        else if (alliance == Inferno.Alliance.BLUE){
-            if (limelight.getStatus().getPipelineIndex() != CLASSIFIER_BLUE_PIPELINE_INDEX) limelight.pipelineSwitch(CLASSIFIER_BLUE_PIPELINE_INDEX);
-
-        }
-        else return null;
-
-        LLResult result = limelight.getLatestResult();
-
-        if (result != null && result.isValid()){
-            double[] llPython = result.getPythonOutput();
-
-            if (llPython == null) {
-                telemetry.addLine("llpython is null !!!");
-                return null;
-            }
-
-            double x1 = llPython[0];
-            double y1 = llPython[1];
-            double x2 = llPython[2];
-            double y2 = llPython[3];
-
-            double m = (y1 - y2) / (x2 - x1);
-
-            double b = y1 - m * x1;
-
-            for (Artifact artifact : artifacts){
-                double x = artifact.getTopCenterXPixels();
-                double y = artifact.getTopCenterYPixels() - 30;
-
-                double lineValue = m * x + b;
-
-                if (lineValue > y){
-                    classifierArtifacts.add(artifact);
-                }
-            }
-        }
-        else telemetry.addLine("result is null !!!");
-
-        return classifierArtifacts;
-    }
-
     public List<List<Artifact>> getGroundAndClassifierArtifacts(Pose botPose){
         if (botPose == null) return null;
         if (!limelight.isRunning()) limelight.start();
@@ -878,6 +624,10 @@ public class Vision {
         artifacts.removeAll(classifierArtifacts);
 
         List<List<Artifact>> output = new ArrayList<>();
+
+        if (classifierArtifacts.size() > 9){
+            classifierArtifacts.subList(9, classifierArtifacts.size()).clear();
+        }
 
         output.add(artifacts);
         output.add(classifierArtifacts);
