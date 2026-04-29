@@ -288,26 +288,26 @@ public class Inferno implements RobotConfig{
             sideRollers.command(servo->servo.setPowerCommand(1.0)),
             new ParallelCommand(
                     transferGate.instantSetTargetCommand("open"),
-                    frontIntake.setPowerCommand(()->inFar() ? frontIntake.getKeyPower("transfer")*TRANSFER_SLOWDOWN: frontIntake.getKeyPower("transfer")),
-                    backIntake.setPowerCommand(()->inFar() ? backIntake.getKeyPower("otherSideTransfer")*TRANSFER_SLOWDOWN: backIntake.getKeyPower("otherSideTransfer")),
+                    frontIntake.setPowerCommand(()->inFar() || shotType==ShotType.SEMISORT ? frontIntake.getKeyPower("transfer")*TRANSFER_SLOWDOWN: frontIntake.getKeyPower("transfer")),
+                    backIntake.setPowerCommand(()->inFar() || shotType==ShotType.SEMISORT ? backIntake.getKeyPower("otherSideTransfer")*TRANSFER_SLOWDOWN: backIntake.getKeyPower("otherSideTransfer")),
                     frontIntakeGate.instantSetTargetCommand("closed"),
                     backIntakeGate.instantSetTargetCommand("closed")
             ),
             new ConditionalCommand(
-                    new IfThen(Inferno::inFar,new SleepCommand(SLOW_TRANSFER_SELECT_DELAY)),
+                    new IfThen(()->inFar() || shotType==ShotType.SEMISORT,new SleepCommand(SLOW_TRANSFER_SELECT_DELAY)),
                     new IfThen(()->true, new SleepCommand(TRANSFER_SELECT_DELAY))
             ),
             new ParallelCommand(
-                    backIntake.setPowerCommand(()->inFar() ? backIntake.getKeyPower("sideSelect")*TRANSFER_SLOWDOWN: frontIntake.getKeyPower("sideSelect")),
+                    backIntake.setPowerCommand(()->inFar() || shotType==ShotType.SEMISORT ? backIntake.getKeyPower("sideSelect")*TRANSFER_SLOWDOWN: frontIntake.getKeyPower("sideSelect")),
                     frontIntakeGate.instantSetTargetCommand("closed"),
                     backIntakeGate.instantSetTargetCommand("closed")
             ),
             new ConditionalCommand(
-                    new IfThen(Inferno::inFar,new SleepCommand(SLOW_TRANSFER_REBOOST_DELAY)),
+                    new IfThen(()->inFar() || shotType==ShotType.SEMISORT, new SleepCommand(SLOW_TRANSFER_REBOOST_DELAY)),
                     new IfThen(()->true, new SleepCommand(TRANSFER_REBOOST_DELAY))
             ),
             new ParallelCommand(
-                    backIntake.setPowerCommand(()->inFar() ? backIntake.getKeyPower("transfer")*TRANSFER_SLOWDOWN: backIntake.getKeyPower("transfer")),
+                    backIntake.setPowerCommand(()->inFar() || shotType==ShotType.SEMISORT ? backIntake.getKeyPower("transfer")*TRANSFER_SLOWDOWN: backIntake.getKeyPower("transfer")),
                     frontIntakeGate.instantSetTargetCommand("backoff"),
                     backIntakeGate.instantSetTargetCommand("backoff")
             ),
@@ -318,26 +318,26 @@ public class Inferno implements RobotConfig{
             sideRollers.command(servo->servo.setPowerCommand(1.0)),
             new ParallelCommand(
                     transferGate.instantSetTargetCommand("open"),
-                    frontIntake.setPowerCommand(()->inFar() ? frontIntake.getKeyPower("otherSideTransfer")*TRANSFER_SLOWDOWN: frontIntake.getKeyPower("otherSideTransfer")),
-                    backIntake.setPowerCommand(()->inFar() ? backIntake.getKeyPower("transfer")*TRANSFER_SLOWDOWN: backIntake.getKeyPower("transfer")),
+                    frontIntake.setPowerCommand(()->inFar() || shotType==ShotType.SEMISORT ? frontIntake.getKeyPower("otherSideTransfer")*TRANSFER_SLOWDOWN: frontIntake.getKeyPower("otherSideTransfer")),
+                    backIntake.setPowerCommand(()->inFar() || shotType==ShotType.SEMISORT ? backIntake.getKeyPower("transfer")*TRANSFER_SLOWDOWN: backIntake.getKeyPower("transfer")),
                     frontIntakeGate.instantSetTargetCommand("closed"),
                     backIntakeGate.instantSetTargetCommand("closed")
             ),
             new ConditionalCommand(
-                    new IfThen(Inferno::inFar,new SleepCommand(SLOW_TRANSFER_SELECT_DELAY)),
+                    new IfThen(()->inFar() || shotType==ShotType.SEMISORT,new SleepCommand(SLOW_TRANSFER_SELECT_DELAY)),
                     new IfThen(()->true, new SleepCommand(TRANSFER_SELECT_DELAY))
             ),
             new ParallelCommand(
-                    frontIntake.setPowerCommand(()->inFar() ? frontIntake.getKeyPower("sideSelect")*TRANSFER_SLOWDOWN: frontIntake.getKeyPower("sideSelect")),
+                    frontIntake.setPowerCommand(()->inFar() || shotType==ShotType.SEMISORT ? frontIntake.getKeyPower("sideSelect")*TRANSFER_SLOWDOWN: frontIntake.getKeyPower("sideSelect")),
                     frontIntakeGate.instantSetTargetCommand("closed"),
                     backIntakeGate.instantSetTargetCommand("closed")
             ),
             new ConditionalCommand(
-                    new IfThen(Inferno::inFar,new SleepCommand(SLOW_TRANSFER_REBOOST_DELAY)),
+                    new IfThen(()->inFar() || shotType==ShotType.SEMISORT,new SleepCommand(SLOW_TRANSFER_REBOOST_DELAY)),
                     new IfThen(()->true, new SleepCommand(TRANSFER_REBOOST_DELAY))
             ),
             new ParallelCommand(
-                    frontIntake.setPowerCommand(()->inFar() ? frontIntake.getKeyPower("transfer")*TRANSFER_SLOWDOWN: frontIntake.getKeyPower("transfer")),
+                    frontIntake.setPowerCommand(()->inFar() || shotType==ShotType.SEMISORT ? frontIntake.getKeyPower("transfer")*TRANSFER_SLOWDOWN: frontIntake.getKeyPower("transfer")),
                     frontIntakeGate.instantSetTargetCommand("backoff"),
                     backIntakeGate.instantSetTargetCommand("backoff")
             ),
@@ -598,7 +598,7 @@ public class Inferno implements RobotConfig{
             new InstantCommand(()->{if ((robotState!=RobotState.SHOOTING && robotState!=RobotState.STOPPED && Objects.nonNull(robotState)) || shotType!=ShotType.AIRSORT){currentBallPath=BallPath.LOW;}}),
             setShooter
     );
-    private static boolean inFar(){
+    public static boolean inFar(){
         return follower.getPose().distanceFrom(new Pose(targetPoint[0], targetPoint[1]))>126;
     }
     private static void colorSensorRead(int index){

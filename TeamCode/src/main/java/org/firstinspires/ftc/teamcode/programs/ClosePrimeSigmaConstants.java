@@ -21,6 +21,7 @@ import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.findMotif;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.flywheel;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.gamePhase;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.hoodDesired;
+import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.inFar;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.loopFSM;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.motif;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.readBallStorage;
@@ -71,6 +72,7 @@ public class ClosePrimeSigmaConstants {
     public static final double INITIAL_WAIT = 0.001;
     public static final double PRE_SHOT_TIME = 0;
     public static final double SHOT_TIME = 0.3;
+    public static final double SLOW_SHOT_TIME = 0.3;
     public static final double slowDownT = 0.73;
     public static final double speedUpT = 0.05;
     public static final double stopIntakeT = 0.17;
@@ -84,7 +86,17 @@ public class ClosePrimeSigmaConstants {
     public static Command shoot = new SequentialCommand(
             new SleepCommand(PRE_SHOT_TIME),
             setState(Inferno.RobotState.SHOOTING),
-            new SleepCommand(SHOT_TIME),
+            new ConditionalCommand(
+                    new IfThen(
+                            ()->inFar() || shotType == Inferno.ShotType.SEMISORT,
+                            new SleepCommand(SLOW_SHOT_TIME)
+                    ),
+                    new IfThen(
+                            ()->true,
+                            new SleepCommand(SHOT_TIME)
+                    )
+
+            ),
             new ConditionalCommand(
                     new IfThen(
                             ()->{
