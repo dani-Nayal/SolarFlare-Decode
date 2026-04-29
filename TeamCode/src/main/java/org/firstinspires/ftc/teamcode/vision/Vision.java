@@ -611,6 +611,7 @@ public class Vision {
 
         List<Artifact> artifacts = getArtifacts(botPose);
 
+        List<Artifact> groundArtifacts = new ArrayList<>();
         List<Artifact> classifierArtifacts = new ArrayList<>();
 
         for (Artifact artifact : artifacts){
@@ -623,13 +624,19 @@ public class Vision {
 
         artifacts.removeAll(classifierArtifacts);
 
-        List<List<Artifact>> output = new ArrayList<>();
-
         if (classifierArtifacts.size() > 9){
             classifierArtifacts.subList(9, classifierArtifacts.size()).clear();
         }
 
-        output.add(artifacts);
+        for (Artifact artifact : artifacts){
+            if (0 <= artifact.getX() && artifact.getX() <= 144 && 0 <= artifact.getY() && artifact.getY() <= 144){
+                groundArtifacts.add(artifact);
+            }
+        }
+
+        List<List<Artifact>> output = new ArrayList<>();
+
+        output.add(groundArtifacts);
         output.add(classifierArtifacts);
 
         return output;
