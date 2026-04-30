@@ -93,7 +93,6 @@ public class Diagnostic extends LinearOpMode {
         waitForStart();
         Components.activateActuatorControl();
         flywheel.call(motor->motor.switchControl("controlOff"));
-        turretYaw.call(servo->servo.switchControl("controlOff"));
         executor.runLoop(this::opModeIsActive);
         leftFront.setZeroPowerBrake();
         rightFront.setZeroPowerBrake();

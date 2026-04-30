@@ -128,7 +128,7 @@ public class DecodeTeleOp extends LinearOpMode {
                 new IfThen(()->gamepad2.left_bumper, new InstantCommand(()->{follower.setPose(hpRelocalizePose); turretYaw.get("turretYawTop").setOffset(-YAW_FIGHT); turretYaw.get("turretYawBottom").setOffset(YAW_FIGHT);}))
         );
         executor.setCommands(
-                new SequentialCommand(findMotif, new InstantCommand(()->vision.stopLimelight())),
+                new SequentialCommand(findMotif),
                 new RunResettingLoop(
                         new PressCommand(
                                 new IfThen(()->gamepad1.right_bumper, setState(RobotState.INTAKE_FRONT)),
@@ -141,7 +141,7 @@ public class DecodeTeleOp extends LinearOpMode {
                         pressCommand,
                         Commands.triggeredToggleCommand(()->gamepad2.left_stick_button,new ContinuousCommand(()->{}),panic),
                         turretYaw.command(servo->servo.triggeredDynamicOffsetCommand(()->gamepad2.left_trigger>0.2,()->gamepad2.right_trigger>0.2,0.5)),
-                        Commands.triggeredDynamicCommand(()->gamepad2.dpad_up,()->gamepad2.dpad_down,new InstantCommand(()->teleOpTPSOffset+=2),new InstantCommand(()->teleOpTPSOffset-=2)),
+                        Commands.triggeredDynamicCommand(()->gamepad2.dpad_up,()->gamepad2.dpad_down,new InstantCommand(()->teleOpTPSOffset+=3),new InstantCommand(()->teleOpTPSOffset-=3)),
                         new PressCommand(
                                 new IfThen(()->!panic.isBusy() && robotState==RobotState.SHOOTING && !(Math.sqrt(gamepad1.left_stick_x*gamepad1.left_stick_x + gamepad1.left_stick_y*gamepad1.left_stick_y)>0.1 || Math.abs(gamepad1.right_stick_x)>0.1),
                                         new SequentialCommand(
@@ -201,6 +201,7 @@ public class DecodeTeleOp extends LinearOpMode {
             Components.telemetry.addLine("");
             Components.telemetry.addData("Hood Angle",(turretPitch.get("turretPitchLeft").getTarget()-TURRET_PITCH_OFFSET)/TURRET_PITCH_RATIO);
             Components.telemetry.addData("Hood Desired", hoodDesired);
+            Components.telemetry.addData("Hood Target", turretPitch.get("turretPitchLeft").getTarget());
             Components.telemetry.addLine("");
             Components.telemetry.addData("Yaw Angle",yawDesired);
             Components.telemetry.addLine("");
