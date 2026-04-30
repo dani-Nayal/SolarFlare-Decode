@@ -48,21 +48,13 @@ public class TestArtifactsWithPanels extends OpMode {
 
         Pose botPose = follower.getPose();
 
-        telemetry.addData("botPose x", botPose.getX());
-        telemetry.addData("botPose y", botPose.getY());
-        telemetry.addData("botPose Heading", vision.normalizeHeading360Degrees(Math.toDegrees(botPose.getHeading())));
-
-        panelsTelemetry.addData("botPose x", botPose.getX());
-        panelsTelemetry.addData("botPose y", botPose.getY());
-        panelsTelemetry.addData("botPose Heading", vision.normalizeHeading360Degrees(Math.toDegrees(botPose.getHeading())));
-
         vision.drawPoseOnPanels(panelsField, botPose, "blue");
 
-        List<Artifact> artifacts = vision.getGroundAndClassifierArtifacts(botPose).get(0);
+        List<Artifact> groundArtifacts = vision.getArtifacts(botPose).get(0);
 
-        if (!artifacts.isEmpty()) {
+        if (!groundArtifacts.isEmpty()) {
 
-            Double intakingAngle = vision.intakingAngleArtifacts(artifacts, botPose, 1);
+            Double intakingAngle = vision.intakingAngleArtifacts(groundArtifacts, botPose, 1);
             telemetry.addData("intaking angle", intakingAngle);
             panelsTelemetry.addData("intaking angle", intakingAngle);
 
@@ -75,10 +67,12 @@ public class TestArtifactsWithPanels extends OpMode {
             panelsField.moveCursor(botPose.getX(), botPose.getY());
             panelsField.line(x2, y2);
 
-            for (Artifact artifact : artifacts) {
-                double x = artifact.getX();
-                double y = artifact.getY();
-                String className = artifact.getClassName();
+            for (Artifact artifact : groundArtifacts) {
+                double x = artifact.x;
+                double y = artifact.y;
+                double z = artifact.z;
+
+                String className = artifact.className;
 
                 panelsTelemetry.addData("x", x);
                 panelsTelemetry.addData("y", y);
@@ -90,7 +84,7 @@ public class TestArtifactsWithPanels extends OpMode {
 
                 panelsField.setStyle(className, className, 0);
                 panelsField.moveCursor(x, y);
-                panelsField.circle(2.5);
+                panelsField.circle(2.5 + (z * 0.2));
             }
         }
         panelsField.update();

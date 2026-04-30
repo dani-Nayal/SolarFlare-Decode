@@ -16,8 +16,6 @@ corner3           corner2
 pedro: 0,0 is bottom left corner, y+ forward x+ right
 ftc / ftc dash / limelight / 0,0 is middle of field, -x forward, +y right
 
-
-
 Pedro Pose yaw is always radians
 Standard Pose2D yaw is always degrees
 
