@@ -65,10 +65,18 @@ public class Vision {
 
         LLResult result = limelight.getLatestResult();
 
+
         List<Artifact> groundArtifacts = new ArrayList<>();
         List<Artifact> classifierArtifacts = new ArrayList<>();
 
-        if (result == null || !result.isValid()) return new ArrayList<>();
+        if (result == null || !result.isValid()){
+            List<List<Artifact>> out = new ArrayList<>();
+
+            out.add(groundArtifacts);
+            out.add(classifierArtifacts);
+
+            return out;
+        }
 
         for (LLResultTypes.DetectorResult detectorResult : result.getDetectorResults()) {
             Artifact artifact = new Artifact(detectorResult, cameraOrientation, botPosePedro);
