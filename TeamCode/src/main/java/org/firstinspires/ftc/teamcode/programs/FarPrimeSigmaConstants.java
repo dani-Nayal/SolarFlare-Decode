@@ -67,6 +67,8 @@ public class FarPrimeSigmaConstants {
     public static final double slowDownAmount = 1.0;
     public static final double loadingSlowDownT = 0.8;
     public static final double loadingSlowDownAmount = 0.7;
+    public static double zeroTarget = 0*TURRET_YAW_RATIO+TURRET_YAW_OFFSET;
+    public static double oppTarget = 180*TURRET_YAW_RATIO+TURRET_YAW_OFFSET;
     public static Double angle;
     public static Command shoot = new SequentialCommand(new SleepCommand(PRE_SHOT_TIME),
             setState(Inferno.RobotState.SHOOTING),
@@ -118,8 +120,7 @@ public class FarPrimeSigmaConstants {
             new PedroCommand(b->
                 b.addPath(new BezierLine(getPose("start"),getPose("preloadShoot")))
                         .setHeadingInterpolation(HeadingInterpolator.piecewise(
-                                new HeadingInterpolator.PiecewiseNode(0.0,0.3,HeadingInterpolator.constant(getHeading("start"))),
-                                HeadingInterpolator.PiecewiseNode.linear(0.3,0.65, getHeading("start"), getHeading("preloadShoot")),
+                                HeadingInterpolator.PiecewiseNode.linear(0.0,0.65, getHeading("start"), getHeading("preloadShoot")),
                                 new HeadingInterpolator.PiecewiseNode(0.65,1.0,HeadingInterpolator.constant(getHeading("preloadShoot")))
                         )),true),
             shoot
@@ -218,6 +219,8 @@ public class FarPrimeSigmaConstants {
     );
     public static void runOpMode(Inferno.Alliance alliance, LinearOpMode opMode){
         initialize(opMode,new Inferno(),true,true);
+        zeroTarget = 0*TURRET_YAW_RATIO+TURRET_YAW_OFFSET;
+        oppTarget = 180*TURRET_YAW_RATIO+TURRET_YAW_OFFSET;
         Inferno.useTurretSOTM = false;
         useVelFeedforward = false;
         findMotif.reset();
@@ -229,11 +232,14 @@ public class FarPrimeSigmaConstants {
         if (alliance == Inferno.Alliance.BLUE) {wallX = 2.5; wallXOffset = 14; visionHeading = Math.toRadians(180);} else {wallX = 141.5; wallXOffset = -14; visionHeading = Math.toRadians(0);}
         scan1X = getPose("shoot").getX()*2.0/3.0+ wallX /3.0;
         scan2X = getPose("shoot").getX()/3.0+wallX*2.0/3.0;
-
         gamePhase = Inferno.GamePhase.AUTO;
         Pedro.createFollower(getPose("start"));
         executor.setWriteToTelemetry(()->{
-            telemetry.addData("offset",turretYaw.get("turretYawTop").getOffset());
+            telemetry.addData("Turret Target", turretYaw.get("turretYawTop").getTargetMinusOffset());
+            telemetry.addData("Turret Angle", (turretYaw.get("turretYawTop").getTargetMinusOffset()-TURRET_YAW_OFFSET)/TURRET_YAW_RATIO);
+            telemetry.addData("0 Target", zeroTarget);
+            telemetry.addData("180 Target", oppTarget);
+            telemetry.addLine("");
             telemetry.addData("Target Flywheel Velocity",0);
             telemetry.addData("Flywheel Velocity",0);
             telemetry.addData("botX",follower.getPose().getX());
@@ -246,11 +252,19 @@ public class FarPrimeSigmaConstants {
         executor.setCommands(
                 new SequentialCommand(new SleepCommand(1.0),new InstantCommand(Inferno::initTurretYawPosition)),
                 turretYaw.command(servo->servo.instantSetTargetCommand(0*TURRET_YAW_RATIO+TURRET_YAW_OFFSET)),
-                turretYaw.command(servo->servo.triggeredDynamicOffsetCommand(()->gamepad1.left_trigger>0.2,()->gamepad1.right_trigger>0.2,0.05))
+                turretYaw.command(servo->servo.triggeredDynamicTargetCommand(()->gamepad1.left_trigger>0.2,()->gamepad1.right_trigger>0.2,0.2)),
+                new RunResettingLoop(
+                        new PressCommand(
+                                new IfThen(()->gamepad1.left_stick_button, new InstantCommand(()->zeroTarget = turretYaw.get("turretYawTop").getTargetMinusOffset())),
+                                new IfThen(()->gamepad1.right_stick_button, new InstantCommand(()->oppTarget = turretYaw.get("turretYawTop").getTargetMinusOffset()))
+                        )
+                )
         );
         turretYaw.call(servo->servo.switchControl("setPos"));
         executor.runLoop(opMode::opModeInInit);
-        turretOffsetFromAuto = turretYaw.get("turretYawTop").getOffset() + YAW_FIGHT;
+        //turretOffsetFromAuto = turretYaw.get("turretYawTop").getOffset() + YAW_FIGHT;
+        TURRET_YAW_OFFSET = zeroTarget;
+        TURRET_YAW_RATIO = (oppTarget-zeroTarget)/180.0;
         Components.activateActuatorControl();
         executor.setWriteToTelemetry(()->{
             telemetry.addData("Motif",Arrays.asList(motif));
@@ -297,7 +311,7 @@ public class FarPrimeSigmaConstants {
                 visionIntake
         );
         executor.setCommands(
-                new SequentialCommand(new ParallelCommand(findMotif, new SequentialCommand(new SleepCommand(5),new InstantCommand(findMotif::stop))), new InstantCommand(()->vision.stopLimelight())),
+                new SequentialCommand(new ParallelCommand(findMotif, new SequentialCommand(new SleepCommand(5),new InstantCommand(findMotif::stop)))),
                 new SequentialCommand(
                         new ParallelCommand(
                                 mainPath,

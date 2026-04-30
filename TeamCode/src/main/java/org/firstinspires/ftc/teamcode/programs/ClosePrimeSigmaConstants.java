@@ -83,6 +83,8 @@ public class ClosePrimeSigmaConstants {
     public static final double shootSlowT = 0.8;
     public static final double shootSlowAmount = 1.0;
     public static Inferno.ShotType sorting = NORMAL;
+    public static double zeroTarget = 0*TURRET_YAW_RATIO+TURRET_YAW_OFFSET;
+    public static double oppTarget = 180*TURRET_YAW_RATIO+TURRET_YAW_OFFSET;
     public static Command shoot = new SequentialCommand(
             new SleepCommand(PRE_SHOT_TIME),
             setState(Inferno.RobotState.SHOOTING),
@@ -131,7 +133,7 @@ public class ClosePrimeSigmaConstants {
         poses.put("secondSpikeCtrl",new Pose(41.07, 58.06));
         poses.put("secondSpike",new Pose(18.829, 58.805));
         poses.put("secondSpikeGateOpen",new Pose(16.80, 60.54,Math.toRadians(180)));
-        poses.put("gateOpen",new Pose(16.3, 57.5,Math.toRadians(160)));
+        poses.put("gateOpen",new Pose(15.8, 57.5,Math.toRadians(160)));
         poses.put("firstSpike",new Pose(22.773, 81,Math.toRadians(180)));
         poses.put("thirdSpikeLead",new Pose(42.90, 45.23));
         poses.put("thirdSpikeCtrl",new Pose(35.36, 35.64));
@@ -213,7 +215,8 @@ public class ClosePrimeSigmaConstants {
                             new HeadingInterpolator.PiecewiseNode(0.1,1.0, HeadingInterpolator.tangent.reverse())
                     ): HeadingInterpolator.piecewise(
                             new HeadingInterpolator.PiecewiseNode(0.0,0.1,HeadingInterpolator.constant(getHeading("gateOpen"))),
-                            new HeadingInterpolator.PiecewiseNode(0.1,0.7,HeadingInterpolator.tangent.reverse()),
+                            new HeadingInterpolator.PiecewiseNode(0.1,0.4,HeadingInterpolator.tangent.reverse()),
+                            HeadingInterpolator.PiecewiseNode.linear(0.4,0.7, Math.atan2(getPose("gateOpen").getY() - getPose("shoot").getY(), getPose("gateOpen").getX() - getPose("shoot").getX()), getHeading("shoot")),
                             new HeadingInterpolator.PiecewiseNode(0.7,1.0,HeadingInterpolator.constant(getHeading("shoot")))
                     ); return b.addPath(
                                     new BezierLine(
@@ -230,7 +233,8 @@ public class ClosePrimeSigmaConstants {
     );
     public static Command firstSpike = new SequentialCommand(
             new PedroCommand((PathBuilder b)->{HeadingInterpolator interp = sorting==NORMAL ? HeadingInterpolator.tangent.reverse(): HeadingInterpolator.piecewise(
-                    new HeadingInterpolator.PiecewiseNode(0.0,0.7,HeadingInterpolator.tangent.reverse()),
+                    new HeadingInterpolator.PiecewiseNode(0.0,0.4,HeadingInterpolator.tangent.reverse()),
+                    HeadingInterpolator.PiecewiseNode.linear(0.4,0.7, Math.atan2(getPose("firstSpike").getY() - getPose("shoot").getY(), getPose("firstSpike").getX() - getPose("shoot").getX()), getHeading("shoot")),
                     new HeadingInterpolator.PiecewiseNode(0.7,1.0,HeadingInterpolator.constant(getHeading("shoot")))
             ); return b
                     .addPath(
@@ -254,7 +258,8 @@ public class ClosePrimeSigmaConstants {
     );
     public static Command thirdSpike =  new SequentialCommand(new PedroCommand(
             (PathBuilder b)->{HeadingInterpolator interp = sorting==NORMAL ? HeadingInterpolator.tangent.reverse(): HeadingInterpolator.piecewise(
-                    new HeadingInterpolator.PiecewiseNode(0.0,0.7,HeadingInterpolator.tangent.reverse()),
+                    new HeadingInterpolator.PiecewiseNode(0.0,0.4,HeadingInterpolator.tangent.reverse()),
+                    HeadingInterpolator.PiecewiseNode.linear(0.4,0.7, Math.atan2(getPose("thirdSpike").getY() - getPose("shoot").getY(), getPose("thirdSpike").getX() - getPose("shoot").getX()), getHeading("shoot")),
                     new HeadingInterpolator.PiecewiseNode(0.7,1.0,HeadingInterpolator.constant(getHeading("shoot")))
                 );
                 return b.addPath(
@@ -322,6 +327,8 @@ public class ClosePrimeSigmaConstants {
     }
     public static void runOpMode(Inferno.Alliance alliance, LinearOpMode opMode){
         sorting = NORMAL;
+        zeroTarget = 0*TURRET_YAW_RATIO+TURRET_YAW_OFFSET;
+        oppTarget = 180*TURRET_YAW_RATIO+TURRET_YAW_OFFSET;
         poses.put("shoot",new Pose(SHOOT[0],SHOOT[1],SHOOT[2]));
         initialize(opMode,new Inferno(),true,true);
         Inferno.useTurretSOTM = false;
@@ -353,7 +360,10 @@ public class ClosePrimeSigmaConstants {
         ));
         executor.setWriteToTelemetry(()->{
                 telemetry.addData("Sorting", sorting);
-                telemetry.addData("Offset", turretYaw.get("turretYawTop").getOffset());
+                telemetry.addData("Turret Target", turretYaw.get("turretYawTop").getTargetMinusOffset());
+                telemetry.addData("Turret Angle", (turretYaw.get("turretYawTop").getTargetMinusOffset()-TURRET_YAW_OFFSET)/TURRET_YAW_RATIO);
+                telemetry.addData("0 Target", zeroTarget);
+                telemetry.addData("180 Target", oppTarget);
                 telemetry.addLine("");
                 telemetry.addLine("A: First Spike");
                 telemetry.addLine("B: Second Spike");
@@ -385,7 +395,7 @@ public class ClosePrimeSigmaConstants {
                 new SequentialCommand(new SleepCommand(1.0),new InstantCommand(Inferno::initTurretYawPosition)),
                 Commands.triggeredCycleCommand(()->gamepad1.start, new InstantCommand(()->sorting=SEMISORT), new InstantCommand(()->sorting=AIRSORT), new InstantCommand(()->sorting=NORMAL)),
                 turretYaw.command(servo->servo.instantSetTargetCommand(0*TURRET_YAW_RATIO+TURRET_YAW_OFFSET)),
-                turretYaw.command(servo->servo.triggeredDynamicOffsetCommand(()->gamepad1.left_trigger>0.2,()->gamepad1.right_trigger>0.2,0.05)),
+                turretYaw.command(servo->servo.triggeredDynamicTargetCommand(()->gamepad1.left_trigger>0.2,()->gamepad1.right_trigger>0.2,0.2)),
                 new RunResettingLoop(new PressCommand(
                         new IfThen(()->gamepad1.dpad_up,new InstantCommand(()->{
                                 if (!isInserting){
@@ -414,12 +424,16 @@ public class ClosePrimeSigmaConstants {
                         new IfThen(()->gamepad1.left_bumper,new InstantCommand(()->addAction(preloadShoot,"preloadShoot"))),
                         new IfThen(()->gamepad1.right_bumper,new InstantCommand(()->addAction(preloadMotifShoot,"preloadMotifShoot"))),
                         new IfThen(()->gamepad1.dpad_left,new InstantCommand(()->addAction(secondSpikeGateOpen,"secondSpikeGateOpen"))),
-                        new IfThen(()->gamepad1.back,new InstantCommand(ClosePrimeSigmaConstants::removeAction))
+                        new IfThen(()->gamepad1.back,new InstantCommand(ClosePrimeSigmaConstants::removeAction)),
+                        new IfThen(()->gamepad1.left_stick_button, new InstantCommand(()->zeroTarget = turretYaw.get("turretYawTop").getTargetMinusOffset())),
+                        new IfThen(()->gamepad1.right_stick_button, new InstantCommand(()->oppTarget = turretYaw.get("turretYawTop").getTargetMinusOffset()))
                 ))
         );
         turretYaw.call(servo->servo.switchControl("setPos"));
         executor.runLoop(opMode::opModeInInit);
-        turretOffsetFromAuto = turretYaw.get("turretYawTop").getOffset() + YAW_FIGHT;
+        //turretOffsetFromAuto = turretYaw.get("turretYawTop").getOffset() + YAW_FIGHT;
+        TURRET_YAW_OFFSET = zeroTarget;
+        TURRET_YAW_RATIO = (oppTarget-zeroTarget)/180.0;
         Components.activateActuatorControl();
         executor.setWriteToTelemetry(()->{
             telemetry.addData("Motif",Arrays.asList(motif));
@@ -460,7 +474,7 @@ public class ClosePrimeSigmaConstants {
         if (!pathList.isEmpty() && !(sorting==AIRSORT)) pathList.add(pathList.size()-1,new InstantCommand(()->poses.put("shoot",new Pose(FINAL_SHOOT[0], FINAL_SHOOT[1], FINAL_SHOOT[2]))));
         SequentialCommand mainPath = new SequentialCommand(pathList.toArray(new Command[0]));
         executor.setCommands(
-                new ParallelCommand(findMotif, new SequentialCommand(new SleepCommand(5),new InstantCommand(findMotif::stop))),
+                new ParallelCommand(findMotif, new SequentialCommand(new SleepCommand(8),new InstantCommand(findMotif::stop))),
                 new SequentialCommand(
                         new ParallelCommand(
                                 mainPath,

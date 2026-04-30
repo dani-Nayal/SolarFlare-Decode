@@ -52,8 +52,8 @@ public class TestArtifactsWithPanels extends OpMode {
 
         List<List<Artifact>> artifacts = vision.getArtifacts(botPose);
 
-
-        List<Artifact> groundArtifacts = vision.getArtifacts(botPose).get(0);
+        List<Artifact> groundArtifacts = artifacts.get(0);
+        List<Artifact> classifierArtifacts = artifacts.get(1);
 
         if (!groundArtifacts.isEmpty()) {
 
@@ -73,21 +73,68 @@ public class TestArtifactsWithPanels extends OpMode {
             for (Artifact artifact : groundArtifacts) {
                 double x = artifact.x;
                 double y = artifact.y;
-                double z = artifact.z;
-
                 String className = artifact.className;
+                Artifact.ARTIFACT_TYPE artifactType = artifact.artifactType;
 
                 panelsTelemetry.addData("x", x);
                 panelsTelemetry.addData("y", y);
                 panelsTelemetry.addData("className", className);
+                panelsTelemetry.addData("artifactType", artifactType);
 
                 telemetry.addData("x", x);
                 telemetry.addData("y", y);
                 telemetry.addData("className", className);
+                telemetry.addData("artifactType", artifactType);
 
                 panelsField.setStyle(className, className, 0);
                 panelsField.moveCursor(x, y);
-                panelsField.circle(2.5 + (z * 0.2));
+                panelsField.circle(2.5);
+            }
+            for (Artifact artifact : groundArtifacts) {
+                double x = artifact.x;
+                double y = artifact.y;
+                String className = artifact.className;
+                Artifact.ARTIFACT_TYPE artifactType = artifact.artifactType;
+
+                panelsTelemetry.addData("x", x);
+                panelsTelemetry.addData("y", y);
+                panelsTelemetry.addData("className", className);
+                panelsTelemetry.addData("artifactType", artifactType);
+
+                telemetry.addData("x", x);
+                telemetry.addData("y", y);
+                telemetry.addData("className", className);
+                telemetry.addData("artifactType", artifactType);
+
+                panelsField.setStyle(className, className, 0);
+                panelsField.moveCursor(x, y);
+                panelsField.circle(2.5);
+            }
+        }
+
+        if (!classifierArtifacts.isEmpty()){
+            for (Artifact artifact : classifierArtifacts) {
+                double x = artifact.x;
+                double y = artifact.y;
+                double z = artifact.z;
+                String className = artifact.className;
+                Artifact.ARTIFACT_TYPE artifactType = artifact.artifactType;
+
+                panelsTelemetry.addData("x", x);
+                panelsTelemetry.addData("y", y);
+                panelsTelemetry.addData("z", z);
+                panelsTelemetry.addData("className", className);
+                panelsTelemetry.addData("artifactType", artifactType);
+
+                telemetry.addData("x", x);
+                telemetry.addData("y", y);
+                telemetry.addData("z", z);
+                telemetry.addData("className", className);
+                telemetry.addData("artifactType", artifactType);
+
+                panelsField.setStyle(className, className, 0);
+                panelsField.moveCursor(x, y);
+                panelsField.circle(2.5 + (z / 4));
             }
         }
         panelsField.update();

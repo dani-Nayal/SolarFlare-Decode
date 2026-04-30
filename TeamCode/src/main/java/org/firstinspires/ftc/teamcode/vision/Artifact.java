@@ -37,7 +37,7 @@ public class Artifact {
         CLASSIFIER,
         INVALID
     }
-    ARTIFACT_TYPE artifactType;
+    public ARTIFACT_TYPE artifactType;
     public Artifact(LLResultTypes.DetectorResult detectorResult, Vision.CAMERA_ORIENTATION cameraOrientation, Pose botPose){
         if (detectorResult == null) {
             artifactType = ARTIFACT_TYPE.INVALID;
@@ -90,21 +90,24 @@ public class Artifact {
         }
         else {
             double horizontalAngle = -txBottomCenter + Math.toDegrees(botPose.getHeading());
-            double cameraDist = Math.sqrt(cameraPoseOnRobot.getPosition().x*cameraPoseOnRobot.getPosition().x+cameraPoseOnRobot.getPosition().y*cameraPoseOnRobot.getPosition().y);
+            double cameraDist = Math.sqrt(cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).x*cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).x+cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).y*cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).y);
             double limelightX = botPose.getX()+cos(botPose.getHeading())*cameraDist;
             double limelightY = botPose.getY()+sin(botPose.getHeading())*cameraDist;
-            double limelightZ = cameraPoseOnRobot.getPosition().z;
+            double limelightZ = cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).z;
             this.x = cos(Math.toRadians(horizontalAngle))>0 ? 144-3.5: 3.5;
 
             double firstHyp = (this.x-limelightX)/cos(Math.toRadians(horizontalAngle));
             this.y = firstHyp*sin(Math.toRadians(horizontalAngle))+limelightY;
-            double secondHyp = firstHyp/cos(Math.toRadians(tyTopCenter));
-            this.z = secondHyp*sin(Math.toRadians(tyTopCenter))+limelightZ;
+            double secondHyp = firstHyp/cos(Math.toRadians(tyBottomCenter));
+            this.z = secondHyp*sin(Math.toRadians(tyBottomCenter))+limelightZ;
 
-            double predictedZ = INTAKING_RAMP_SLOPE * (y - 70.5) + 8;
+            double predictedZ = INTAKING_RAMP_SLOPE * (y - 70.5) + 6;
 
-            if (Math.abs(predictedZ - z) < 5){
+            if (z - predictedZ < 10){
                 artifactType = ARTIFACT_TYPE.CLASSIFIER;
+            }
+            else{
+                artifactType = ARTIFACT_TYPE.INVALID;
             }
         }
     }
