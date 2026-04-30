@@ -208,24 +208,31 @@ public class ClosePrimeSigmaConstants {
     true).setTimeout(2),
             new Inferno.CheckFull(gateIntakeTimeout),
             new PedroCommand(
-                    (PathBuilder b)->b.addPath(
+                    (PathBuilder b)->{HeadingInterpolator interp = sorting==NORMAL ? HeadingInterpolator.piecewise(
+                            new HeadingInterpolator.PiecewiseNode(0.0,0.1,HeadingInterpolator.constant(getHeading("gateOpen"))),
+                            new HeadingInterpolator.PiecewiseNode(0.1,1.0, HeadingInterpolator.tangent.reverse())
+                    ): HeadingInterpolator.piecewise(
+                            new HeadingInterpolator.PiecewiseNode(0.0,0.1,HeadingInterpolator.constant(getHeading("gateOpen"))),
+                            new HeadingInterpolator.PiecewiseNode(0.1,0.7,HeadingInterpolator.tangent.reverse()),
+                            new HeadingInterpolator.PiecewiseNode(0.7,1.0,HeadingInterpolator.constant(getHeading("shoot")))
+                    ); return b.addPath(
                                     new BezierLine(
                                             follower::getPose,
                                             getPose("shoot")
                                     )
                             )
-                            .setHeadingInterpolation(HeadingInterpolator.piecewise(
-                                    new HeadingInterpolator.PiecewiseNode(0.0,0.1,HeadingInterpolator.constant(getHeading("gateOpen"))),
-                                    new HeadingInterpolator.PiecewiseNode(0.1,1.0, HeadingInterpolator.tangent.reverse())
-                            ))
+                            .setHeadingInterpolation(interp)
                             .addParametricCallback(stopIntakeT,()->setState(Inferno.RobotState.STOPPED).run())
                             .addParametricCallback(shootSlowT,()->follower.setMaxPower(shootSlowAmount))
                             .addParametricCallback(0.93,()->classifierBallCount = vision.getArtifacts(follower.getPose()).get(1).size())
-                            .addParametricCallback(0.93,()->follower.setMaxPower(1.0)),
+                            .addParametricCallback(0.93,()->follower.setMaxPower(1.0));},
     true), shoot
     );
     public static Command firstSpike = new SequentialCommand(
-            new PedroCommand((PathBuilder b)->b
+            new PedroCommand((PathBuilder b)->{HeadingInterpolator interp = sorting==NORMAL ? HeadingInterpolator.tangent.reverse(): HeadingInterpolator.piecewise(
+                    new HeadingInterpolator.PiecewiseNode(0.0,0.7,HeadingInterpolator.tangent.reverse()),
+                    new HeadingInterpolator.PiecewiseNode(0.7,1.0,HeadingInterpolator.constant(getHeading("shoot")))
+            ); return b
                     .addPath(
                             new BezierLine(
                                     follower::getPose,
@@ -238,15 +245,19 @@ public class ClosePrimeSigmaConstants {
                                     follower::getPose,
                                     getPose("shoot")
                             )
-                    ).setTangentHeadingInterpolation().setReversed()
+                    ).setHeadingInterpolation(interp)
                     .addParametricCallback(speedUpT,()->follower.setMaxPower(1.0))
                     .addParametricCallback(stopIntakeT,()->setState(Inferno.RobotState.STOPPED).run())
                     .addParametricCallback(fourthShootSlowT,()->follower.setMaxPower(shootSlowAmount))
                     .addParametricCallback(0.93,()->classifierBallCount = vision.getArtifacts(follower.getPose()).get(1).size())
-                    .addParametricCallback(0.93,()->follower.setMaxPower(1.0)),true), shoot
+                    .addParametricCallback(0.93,()->follower.setMaxPower(1.0));},true), shoot
     );
     public static Command thirdSpike =  new SequentialCommand(new PedroCommand(
-            (PathBuilder b)->b.addPath(
+            (PathBuilder b)->{HeadingInterpolator interp = sorting==NORMAL ? HeadingInterpolator.tangent.reverse(): HeadingInterpolator.piecewise(
+                    new HeadingInterpolator.PiecewiseNode(0.0,0.7,HeadingInterpolator.tangent.reverse()),
+                    new HeadingInterpolator.PiecewiseNode(0.7,1.0,HeadingInterpolator.constant(getHeading("shoot")))
+                );
+                return b.addPath(
                             new BezierLine(
                                     follower::getPose,
                                     getPose("thirdSpikeLead")
@@ -263,10 +274,10 @@ public class ClosePrimeSigmaConstants {
                                     follower::getPose,
                                     getPose("shoot")
                             )
-                    ).setTangentHeadingInterpolation().setReversed()
+                    ).setHeadingInterpolation(interp)
                     .addParametricCallback(speedUpT,()->follower.setMaxPower(1.0))
                     .addParametricCallback(0.93,()->classifierBallCount = vision.getArtifacts(follower.getPose()).get(1).size())
-                    .addParametricCallback(stopIntakeT,()->setState(Inferno.RobotState.STOPPED).run()),true), shoot);
+                    .addParametricCallback(stopIntakeT,()->setState(Inferno.RobotState.STOPPED).run());},true), shoot);
     public static Command park = new SequentialCommand(setState(null),
             new PedroCommand(b->
                     b.addPath(new BezierLine(follower::getPose,getPose("park")))

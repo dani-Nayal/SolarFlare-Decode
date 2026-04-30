@@ -141,7 +141,7 @@ public class DecodeTeleOp extends LinearOpMode {
                         pressCommand,
                         Commands.triggeredToggleCommand(()->gamepad2.left_stick_button,new ContinuousCommand(()->{}),panic),
                         turretYaw.command(servo->servo.triggeredDynamicOffsetCommand(()->gamepad2.left_trigger>0.2,()->gamepad2.right_trigger>0.2,0.5)),
-                        Commands.triggeredDynamicCommand(()->gamepad2.dpad_up,()->gamepad2.dpad_down,new InstantCommand(()->teleOpTPSOffset+=0.5),new InstantCommand(()->teleOpTPSOffset-=0.5)),
+                        Commands.triggeredDynamicCommand(()->gamepad2.dpad_up,()->gamepad2.dpad_down,new InstantCommand(()->teleOpTPSOffset+=2),new InstantCommand(()->teleOpTPSOffset-=2)),
                         new PressCommand(
                                 new IfThen(()->!panic.isBusy() && robotState==RobotState.SHOOTING && !(Math.sqrt(gamepad1.left_stick_x*gamepad1.left_stick_x + gamepad1.left_stick_y*gamepad1.left_stick_y)>0.1 || Math.abs(gamepad1.right_stick_x)>0.1),
                                         new SequentialCommand(
