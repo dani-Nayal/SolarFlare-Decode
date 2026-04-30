@@ -65,7 +65,6 @@ public class Vision {
 
         LLResult result = limelight.getLatestResult();
 
-
         List<Artifact> groundArtifacts = new ArrayList<>();
         List<Artifact> classifierArtifacts = new ArrayList<>();
 

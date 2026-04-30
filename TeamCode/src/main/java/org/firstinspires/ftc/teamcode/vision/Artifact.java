@@ -12,7 +12,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class Artifact {
     public final double INTAKING_RAMP_SLOPE = 0.45977011494;
@@ -37,7 +39,7 @@ public class Artifact {
         CLASSIFIER,
         INVALID
     }
-    ARTIFACT_TYPE artifactType;
+    public ARTIFACT_TYPE artifactType;
     public Artifact(LLResultTypes.DetectorResult detectorResult, Vision.CAMERA_ORIENTATION cameraOrientation, Pose botPose){
         if (detectorResult == null) {
             artifactType = ARTIFACT_TYPE.INVALID;
@@ -90,21 +92,24 @@ public class Artifact {
         }
         else {
             double horizontalAngle = -txBottomCenter + Math.toDegrees(botPose.getHeading());
-            double cameraDist = Math.sqrt(cameraPoseOnRobot.getPosition().x*cameraPoseOnRobot.getPosition().x+cameraPoseOnRobot.getPosition().y*cameraPoseOnRobot.getPosition().y);
+            double cameraDist = Math.sqrt(cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).x*cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).x+cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).y*cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).y);
             double limelightX = botPose.getX()+cos(botPose.getHeading())*cameraDist;
             double limelightY = botPose.getY()+sin(botPose.getHeading())*cameraDist;
-            double limelightZ = cameraPoseOnRobot.getPosition().z;
+            double limelightZ = cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).z;
             this.x = cos(Math.toRadians(horizontalAngle))>0 ? 144-3.5: 3.5;
 
             double firstHyp = (this.x-limelightX)/cos(Math.toRadians(horizontalAngle));
             this.y = firstHyp*sin(Math.toRadians(horizontalAngle))+limelightY;
-            double secondHyp = firstHyp/cos(Math.toRadians(tyTopCenter));
-            this.z = secondHyp*sin(Math.toRadians(tyTopCenter))+limelightZ;
+            double secondHyp = firstHyp/cos(Math.toRadians(tyBottomCenter));
+            this.z = secondHyp*sin(Math.toRadians(tyBottomCenter))+limelightZ;
 
-            double predictedZ = INTAKING_RAMP_SLOPE * (y - 70.5) + 8;
+            double predictedZ = INTAKING_RAMP_SLOPE * (y - 70.5) + 6;
 
-            if (Math.abs(predictedZ - z) < 5){
+            if (z - predictedZ < 10){
                 artifactType = ARTIFACT_TYPE.CLASSIFIER;
+            }
+            else{
+                artifactType = ARTIFACT_TYPE.INVALID;
             }
         }
     }
@@ -209,5 +214,55 @@ public class Artifact {
         else return null;
 
         return targetYPixels;
+    }
+
+    public class RansacLineFilter {
+
+        class Line {
+            double A, B, C; // Ax + By + C = 0
+
+            Line(Artifact p1, Artifact p2) {
+                A = p2.y - p1.y;
+                B = p1.x - p2.x;
+                C = -(A * p1.x + B * p1.y);
+            }
+
+            double distance(Artifact p) {
+                return Math.abs(A * p.x + B * p.y + C) /
+                        Math.sqrt(A * A + B * B);
+            }
+        }
+
+        public List<Artifact> filterLineartifacts(List<Artifact> artifacts,
+                                                   int iterations,
+                                                   double threshold) {
+            Random rand = new Random();
+            List<Artifact> bestInliers = new ArrayList<>();
+
+            int n = artifacts.size();
+            if (n < 2) return artifacts;
+
+            for (int i = 0; i < iterations; i++) {
+                // pick 2 random distinct artifacts
+                Artifact p1 = artifacts.get(rand.nextInt(n));
+                Artifact p2 = artifacts.get(rand.nextInt(n));
+                if (p1 == p2) continue;
+
+                Line line = new Line(p1, p2);
+                List<Artifact> inliers = new ArrayList<>();
+
+                for (Artifact p : artifacts) {
+                    if (line.distance(p) < threshold) {
+                        inliers.add(p);
+                    }
+                }
+
+                if (inliers.size() > bestInliers.size()) {
+                    bestInliers = inliers;
+                }
+            }
+
+            return bestInliers;
+        }
     }
 }
