@@ -8,8 +8,6 @@ import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_PITCH_O
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_PITCH_RATIO;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.YAW_FIGHT;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.alliance;
-import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.autoGateIntake;
-import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.autoShoot;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.ballStorage;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.classifierBallCount;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.findMotif;
@@ -31,6 +29,7 @@ import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.setState;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.shotType;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.targetFlywheelVelocity;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.targetPoint;
+import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.teleOpTPSOffset;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.toggleShotType;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.transfer;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.turretOffsetFromAuto;
@@ -120,13 +119,13 @@ public class DecodeTeleOp extends LinearOpMode {
         breakFollowing();
         Command aprilTag = new AprilTagRelocalize();
         PressCommand pressCommand = new PressCommand(
-                new IfThen(()->gamepad2.dpad_right,toggleShotType()),
-                new IfThen(()->gamepad2.y,new InstantCommand(()->classifierBallCount=vision.getGroundAndClassifierArtifacts(follower.getPose()).get(1).size())),
+                new IfThen(()->gamepad2.back,toggleShotType()),
+                new IfThen(()->gamepad2.y,new InstantCommand(()->classifierBallCount=vision.getArtifacts(follower.getPose()).get(1).size())),
                 new IfThen(()->gamepad2.x,new InstantCommand(()->classifierBallCount=0)),
                 new IfThen(()->gamepad2.a,new InstantCommand(()->{if (classifierBallCount<9) {classifierBallCount+=1;}})),
                 new IfThen(()->gamepad2.b,new InstantCommand(()->{if (classifierBallCount>0){classifierBallCount-=1;}})),
-                new IfThen(()->gamepad2.right_bumper, new InstantCommand(()->follower.setPose(gateRelocalizePose))),
-                new IfThen(()->gamepad2.left_bumper, new InstantCommand(()->follower.setPose(hpRelocalizePose)))
+                new IfThen(()->gamepad2.right_bumper, new InstantCommand(()->{follower.setPose(gateRelocalizePose); turretYaw.get("turretYawTop").setOffset(-YAW_FIGHT); turretYaw.get("turretYawBottom").setOffset(YAW_FIGHT);})),
+                new IfThen(()->gamepad2.left_bumper, new InstantCommand(()->{follower.setPose(hpRelocalizePose); turretYaw.get("turretYawTop").setOffset(-YAW_FIGHT); turretYaw.get("turretYawBottom").setOffset(YAW_FIGHT);}))
         );
         executor.setCommands(
                 new SequentialCommand(findMotif, new InstantCommand(()->vision.stopLimelight())),
@@ -142,6 +141,7 @@ public class DecodeTeleOp extends LinearOpMode {
                         pressCommand,
                         Commands.triggeredToggleCommand(()->gamepad2.left_stick_button,new ContinuousCommand(()->{}),panic),
                         turretYaw.command(servo->servo.triggeredDynamicOffsetCommand(()->gamepad2.left_trigger>0.2,()->gamepad2.right_trigger>0.2,0.5)),
+                        Commands.triggeredDynamicCommand(()->gamepad2.dpad_up,()->gamepad2.dpad_down,new InstantCommand(()->teleOpTPSOffset+=0.5),new InstantCommand(()->teleOpTPSOffset-=0.5)),
                         new PressCommand(
                                 new IfThen(()->!panic.isBusy() && robotState==RobotState.SHOOTING && !(Math.sqrt(gamepad1.left_stick_x*gamepad1.left_stick_x + gamepad1.left_stick_y*gamepad1.left_stick_y)>0.1 || Math.abs(gamepad1.right_stick_x)>0.1),
                                         new SequentialCommand(
@@ -172,8 +172,8 @@ public class DecodeTeleOp extends LinearOpMode {
                 ),
                 loopFSM,
                 new ContinuousCommand(()->{
-                    if (yawDesired>=165 || yawDesired<=-80 && !isRed) {isRed=true; gamepad1.setLedColor(255,0,0,1000000);}
-                    else if (yawDesired<=165 && yawDesired>=-80 && isRed) {isRed=false; gamepad1.setLedColor(0,0,0,1000000);}
+                    if (yawDesired>=150 || yawDesired<=-80 && !isRed) {isRed=true; gamepad1.setLedColor(255,0,0,1000000);}
+                    else if (yawDesired<=150 && yawDesired>=-80 && isRed) {isRed=false; gamepad1.setLedColor(0,0,0,1000000);}
                     long count = Arrays.stream(ballStorage).filter(Objects::nonNull).count();
                     if (count==3 && count!=previousBallCount && !gamepad1.isRumbling()) gamepad1.rumble(1000);
                     else if (count!=3 && gamepad1.isRumbling()) gamepad1.stopRumble();
@@ -182,22 +182,15 @@ public class DecodeTeleOp extends LinearOpMode {
 
         );
         executor.setWriteToTelemetry(()->{
-            Components.telemetry.addData("Yaw Target",turretYaw.get("turretYawTop").getTarget());
-            Components.telemetry.addData("Target Point X",targetPoint[0]);
-            Components.telemetry.addData("Target Point Y",targetPoint[1]);
-            Components.telemetry.addData("Target Point Z",targetPoint[2]);
-            if (aprilTag.isBusy()) counter++;
-            Components.telemetry.addData("Counter",counter);
-            Components.telemetry.addData("Is Busy",aprilTag.isBusy());
-            Components.telemetry.addData("Is Finished",aprilTag.isFinished());
-            Components.telemetry.addData("Is Start",aprilTag.isStart());
-            Components.telemetry.addLine("");
             Components.telemetry.addData("Classifier Count",classifierBallCount);
             dinglyAlliance();
             Components.telemetry.addData("Dingly Alliance", Arrays.asList(dinglyAlliance));
             Components.telemetry.addLine("");
             Components.telemetry.addData("Shot Type",shotType);
             Components.telemetry.addData("Motif",Arrays.asList(motif));
+            Components.telemetry.addLine("");
+            Components.telemetry.addData("TPS Offset",teleOpTPSOffset);
+            Components.telemetry.addData("Yaw Offset",turretYaw.get("turretYawTop").getOffset()+YAW_FIGHT);
             Components.telemetry.addLine("");
             Components.telemetry.addData("Ball Storage", Arrays.asList(ballStorage));
             Components.telemetry.addData("Robot State",robotState);

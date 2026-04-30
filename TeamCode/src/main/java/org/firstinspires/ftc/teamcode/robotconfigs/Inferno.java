@@ -51,8 +51,8 @@ public class Inferno implements RobotConfig{
     public static SyncedActuators<BotMotor> flywheel;
     public static double targetFlywheelVelocity;
     public static SyncedActuators<BotServo> turretYaw = new SyncedActuators<>(
-            new BotServo("turretYawTop", Servo.Direction.REVERSE,422,5,355,180),
-            new BotServo("turretYawBottom", Servo.Direction.FORWARD,422,5,355,180)
+            new BotServo("turretYawTop", Servo.Direction.REVERSE,422,5,320,180),
+            new BotServo("turretYawBottom", Servo.Direction.FORWARD,422,5,320,180)
     );
     public static SyncedActuators<BotServo> turretPitch = new SyncedActuators<>(
             new BotServo("turretPitchLeft", Servo.Direction.FORWARD, 422,5,180,102),
@@ -60,8 +60,8 @@ public class Inferno implements RobotConfig{
     );
     public static final double TURRET_PITCH_RATIO = (double) 48/30;
     public static final double TURRET_PITCH_OFFSET = 47;
-    public static final double TURRET_YAW_RATIO = 1.057777777777676767/(48.0/20.0 * 39.0/83.0);
-    public static final double TURRET_YAW_OFFSET = 143.24-13.0/3;
+    public static final double TURRET_YAW_RATIO = (79.0/90.0) * (48.0/20.0) * (39.0/83.0);
+    public static final double TURRET_YAW_OFFSET = 111.6973;
     public static final double YAW_FEEDFORWARD = 0.088;
     public static final double YAW_FIGHT = 1;
     public static final double HOOD_FIGHT = 0;
@@ -90,9 +90,9 @@ public class Inferno implements RobotConfig{
     public static boolean motifShootAll = true;
     private final static double TRANSFER_SELECT_DELAY = 0.035;
     private final static double TRANSFER_REBOOST_DELAY = 0.12;
-    private final static double SLOW_TRANSFER_SELECT_DELAY= 0.045;
-    private final static double SLOW_TRANSFER_REBOOST_DELAY= 0.17;
-    public static final double TRANSFER_SLOWDOWN = 0.7;
+    private final static double SLOW_TRANSFER_SELECT_DELAY = 0.045;
+    private final static double SLOW_TRANSFER_REBOOST_DELAY = 0.14;
+    public static final double TRANSFER_SLOWDOWN = 0.87;
     public static Color[] motif = new Color[]{Color.PURPLE,Color.GREEN,Color.PURPLE};
     public static double classifierBallCount = 0;
     public static Alliance alliance = Alliance.BLUE;
@@ -112,6 +112,7 @@ public class Inferno implements RobotConfig{
     public static boolean useTurretSOTM = true;
     public static double sotmOffset;
     public static double prevSotmOffset;
+    public static double teleOpTPSOffset = 0;
     public static Command autoGateIntake = new ParallelCommand(
             setState(RobotState.INTAKE_FRONT),
             new Pedro.PedroCommand(
@@ -216,7 +217,7 @@ public class Inferno implements RobotConfig{
         flywheel = new SyncedActuators<>(
                 new BotMotor("flywheelLeft", DcMotorSimple.Direction.REVERSE, 0, 0, new String[]{"VelocityPIDF"},
                         new ControlSystem<>(new String[]{"targetVelocity"}, List.of(() -> targetFlywheelVelocity), leftVelocityPID, new CustomFeedforward(1.053, ()->targetFlywheelVelocity/MaxVelRegression.regressFormula(voltageSensorRead.get())),
-                                new CustomFeedforward(0.055, ()->{if (useVelFeedforward && Math.abs(targetFlywheelVelocity-flywheel.get("flywheelLeft").getVelocity())>40) return getFlywheelVelProjected(); else return 0.0;}),
+                                new CustomFeedforward(0.065, ()->{if (useVelFeedforward && Math.abs(targetFlywheelVelocity-flywheel.get("flywheelLeft").getVelocity())>40) return getFlywheelVelProjected(); else return 0.0;}),
                                 new Clamp(), new CustomFeedforward(1, ()->{
                                     if (((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()<targetFlywheelVelocity-35)) {return 1.0;}
                                     if ((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+10){return -1.0;}
@@ -226,7 +227,7 @@ public class Inferno implements RobotConfig{
                         )),
                 new BotMotor("flywheelRight", DcMotorSimple.Direction.FORWARD, 0, 0, new String[]{"VelocityPIDF"},
                         new ControlSystem<>(new String[]{"targetVelocity"}, List.of(() -> targetFlywheelVelocity), rightVelocityPID, new CustomFeedforward(1.053, ()->targetFlywheelVelocity/MaxVelRegression.regressFormula(voltageSensorRead.get())),
-                                new CustomFeedforward(0.055, ()->{if (useVelFeedforward && Math.abs(targetFlywheelVelocity-flywheel.get("flywheelLeft").getVelocity())>40) return getFlywheelVelProjected(); else return 0.0;}),
+                                new CustomFeedforward(0.065, ()->{if (useVelFeedforward && Math.abs(targetFlywheelVelocity-flywheel.get("flywheelLeft").getVelocity())>40) return getFlywheelVelProjected(); else return 0.0;}),
                                 new Clamp(), new CustomFeedforward(1, ()->{
                                     if (((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()<targetFlywheelVelocity-35)) {return 1.0;}
                                     else if ((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+10){return -1.0;}
@@ -235,7 +236,7 @@ public class Inferno implements RobotConfig{
                                 new Clamp()
                         ))
         );
-        turretYaw.call(servo -> servo.setTargetBounds(() -> 195.0 * TURRET_YAW_RATIO + TURRET_YAW_OFFSET, () -> -110.0 * TURRET_YAW_RATIO + TURRET_YAW_OFFSET));
+        //turretYaw.call(servo -> servo.setTargetBounds(() -> 210.0 * TURRET_YAW_RATIO + TURRET_YAW_OFFSET, () -> -110.0 * TURRET_YAW_RATIO + TURRET_YAW_OFFSET));
         turretPitch.call((BotServo servo) -> servo.setTargetBounds(() -> 159.8, () -> 85.9));
         turretPitch.call((BotServo servo)->servo.setPositionCacheThreshold(0.2));
         frontIntake.setKeyPowers(
@@ -513,10 +514,11 @@ public class Inferno implements RobotConfig{
             double dist = Math.sqrt((sotmVirtualTarget[0]-pos.getX())*(sotmVirtualTarget[0]-pos.getX()) + (sotmVirtualTarget[1]-pos.getY())*(sotmVirtualTarget[1]-pos.getY()));
             targetFlywheelVelocity = VelRegression.regressFormula(dist);
             targetFlywheelVelocity = Math.min(targetFlywheelVelocity, VelRegression.regressFormula(173.066461222));
+            targetFlywheelVelocity+=teleOpTPSOffset;
             double actualVel = Math.max(flywheel.get("flywheelLeft").getVelocity(), round(targetFlywheelVelocity/20.0)*20.0-80);
             if (useTurretSOTM){
                 for (int i=0;i<5;i++){
-                    double shotTime = ShotTimeRegression.regressFormula(dist, targetFlywheelVelocity) - 0.067;
+                    double shotTime = ShotTimeRegression.regressFormula(dist, targetFlywheelVelocity) * 1.045;
                     sotmVirtualTarget[0] = targetPoint[0]-vel.getXComponent()*shotTime; sotmVirtualTarget[1] = targetPoint[1]-vel.getYComponent()*shotTime;
                     dist = Math.sqrt((sotmVirtualTarget[0]-pos.getX())*(sotmVirtualTarget[0]-pos.getX()) + (sotmVirtualTarget[1]-pos.getY())*(sotmVirtualTarget[1]-pos.getY()));
                 }
@@ -537,8 +539,8 @@ public class Inferno implements RobotConfig{
             double turretFeedforward = Math.max(-50,Math.min(50,YAW_FEEDFORWARD*getTurretVelProjected()));
             turretPitch.call((BotServo servo)->servo.setTarget(turret[0]*TURRET_PITCH_RATIO+TURRET_PITCH_OFFSET));
             double finalRealAngle = realAngle;
-            if (realAngle<=195) turretYaw.call(servo->servo.setTarget(finalRealAngle *TURRET_YAW_RATIO+TURRET_YAW_OFFSET+turretFeedforward));
-            prevSotmOffset = sotmOffset;
+            if (realAngle<=180) turretYaw.call(servo->servo.setTarget(finalRealAngle *TURRET_YAW_RATIO+TURRET_YAW_OFFSET+turretFeedforward));
+            prevSotmOffset+=Math.signum(sotmOffset-prevSotmOffset)*Math.min(Math.abs(sotmOffset-prevSotmOffset), 5);
     });
     /*
     public static final Command setShooter = new ContinuousCommand(()->{
@@ -1052,6 +1054,7 @@ public class Inferno implements RobotConfig{
 
     @Override
     public void generalInit() {
+        teleOpTPSOffset = 0;
         enableCaching(LynxModule.BulkCachingMode.MANUAL);
         executor.setClearBulkCache(true);
         targetFlywheelVelocity = 0;

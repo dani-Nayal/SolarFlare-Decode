@@ -914,7 +914,7 @@ public abstract class Components {
             super.initDevice();
             if (!Objects.isNull(getDevice())){
                 getDevice().setDirection(direction);
-                if (getDevice() instanceof PwmControl) ((PwmControl) getDevice()).setPwmRange(new PwmControl.PwmRange(500.0,2500.0));
+                if (getDevice() instanceof PwmControl) ((PwmControl) getDevice()).setPwmRange(new PwmControl.PwmRange(600.0,2400.0));
             }
             currCommandedPos = NaN;
             if (!Double.isNaN(initialTarget)) this.setTarget(initialTarget);

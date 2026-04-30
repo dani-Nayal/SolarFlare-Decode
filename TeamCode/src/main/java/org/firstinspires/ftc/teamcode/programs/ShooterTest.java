@@ -4,6 +4,7 @@ import static org.firstinspires.ftc.teamcode.base.Commands.executor;
 import static org.firstinspires.ftc.teamcode.base.Components.initialize;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_YAW_OFFSET;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_YAW_RATIO;
+import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.YAW_FIGHT;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.flywheel;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.turretPitch;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.turretYaw;
@@ -34,12 +35,13 @@ public class ShooterTest extends LinearOpMode {
                                         new Commands.InstantCommand(()->targetYaw = -110)
                                 )
                         )
-                )),
+                ),  new Commands.InstantCommand(()->targetYaw = Math.max(Math.min(targetYaw,210.0),-110.0))),
                 new Commands.RunResettingLoop(new Commands.InstantCommand(()->turretYaw.call(servo->servo.setTarget(targetYaw*TURRET_YAW_RATIO+TURRET_YAW_OFFSET))))
         );
         executor.setWriteToTelemetry(()->{
             telemetry.addData("hood",turretPitch.get("turretPitchLeft").getTarget());
             telemetry.addData("yaw target",turretYaw.get("turretYawTop").getTargetMinusOffset());
+            telemetry.addData("yaw offset",turretYaw.get("turretYawTop").getOffset()+YAW_FIGHT);
             telemetry.addData("yaw angle",targetYaw);
         });
         waitForStart();
