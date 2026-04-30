@@ -219,7 +219,7 @@ public class Inferno implements RobotConfig{
                         new ControlSystem<>(new String[]{"targetVelocity"}, List.of(() -> targetFlywheelVelocity), leftVelocityPID, new CustomFeedforward(1.053, ()->targetFlywheelVelocity/MaxVelRegression.regressFormula(voltageSensorRead.get())),
                                 new CustomFeedforward(0.065, ()->{if (useVelFeedforward && Math.abs(targetFlywheelVelocity-flywheel.get("flywheelLeft").getVelocity())>40) return getFlywheelVelProjected(); else return 0.0;}),
                                 new Clamp(), new CustomFeedforward(1, ()->{
-                                    if (((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()<targetFlywheelVelocity-35)) {return 1.0;}
+                                    if (((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()<targetFlywheelVelocity-30)) {return 1.0;}
                                     if ((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+10){return -1.0;}
                                     else if (flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+40){return -1.0;}
                                     else {return 0.0;}}),
@@ -229,7 +229,7 @@ public class Inferno implements RobotConfig{
                         new ControlSystem<>(new String[]{"targetVelocity"}, List.of(() -> targetFlywheelVelocity), rightVelocityPID, new CustomFeedforward(1.053, ()->targetFlywheelVelocity/MaxVelRegression.regressFormula(voltageSensorRead.get())),
                                 new CustomFeedforward(0.065, ()->{if (useVelFeedforward && Math.abs(targetFlywheelVelocity-flywheel.get("flywheelLeft").getVelocity())>40) return getFlywheelVelProjected(); else return 0.0;}),
                                 new Clamp(), new CustomFeedforward(1, ()->{
-                                    if (((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()<targetFlywheelVelocity-35)) {return 1.0;}
+                                    if (((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()<targetFlywheelVelocity-30)) {return 1.0;}
                                     else if ((robotState==RobotState.SHOOTING || robotState==RobotState.INTAKE_AND_SHOOT)&&flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+10){return -1.0;}
                                     else if (flywheel.get("flywheelLeft").getVelocity()>targetFlywheelVelocity+40){return -1.0;}
                                     else {return 0.0;}}),
@@ -380,6 +380,7 @@ public class Inferno implements RobotConfig{
                                             backIntake.setPowerCommand("stopped")
                                     )
                             ),
+                            new SleepCommand(0.15),
                             setState(RobotState.STOPPED)
                     )
             )
@@ -407,6 +408,7 @@ public class Inferno implements RobotConfig{
                                             frontIntake.setPowerCommand("stopped")
                                     )
                             ),
+                            new SleepCommand(0.15),
                             setState(RobotState.STOPPED)
                     )
             )
@@ -518,7 +520,7 @@ public class Inferno implements RobotConfig{
             double actualVel = Math.max(flywheel.get("flywheelLeft").getVelocity(), round(targetFlywheelVelocity/20.0)*20.0-80);
             if (useTurretSOTM){
                 for (int i=0;i<5;i++){
-                    double shotTime = ShotTimeRegression.regressFormula(dist, targetFlywheelVelocity) * 1.045;
+                    double shotTime = ShotTimeRegression.regressFormula(dist, targetFlywheelVelocity) * 1.048;
                     sotmVirtualTarget[0] = targetPoint[0]-vel.getXComponent()*shotTime; sotmVirtualTarget[1] = targetPoint[1]-vel.getYComponent()*shotTime;
                     dist = Math.sqrt((sotmVirtualTarget[0]-pos.getX())*(sotmVirtualTarget[0]-pos.getX()) + (sotmVirtualTarget[1]-pos.getY())*(sotmVirtualTarget[1]-pos.getY()));
                 }
