@@ -123,7 +123,7 @@ public class ClosePrimeSigmaConstants {
     }
     public static double mirrorHeading(double input){return Math.PI - input;}
     public static final double[] SHOOT = new double[]{59.85,79.42,Math.toRadians(180)};
-    public static final double[] FINAL_SHOOT = new double[]{65,105,Math.toRadians(180)};
+    public static final double[] FINAL_SHOOT = new double[]{60,100,Math.toRadians(180)};
     public static final double[] MOTIF_SHOOT = new double[]{65.5,72.5,Math.toRadians(163)};
     static {
         poses.put("start",new Pose(20.29, 121.28, Math.toRadians(144)));
@@ -133,11 +133,11 @@ public class ClosePrimeSigmaConstants {
         poses.put("secondSpikeCtrl",new Pose(41.07, 58.06));
         poses.put("secondSpike",new Pose(18.829, 58.805));
         poses.put("secondSpikeGateOpen",new Pose(16.80, 60.54,Math.toRadians(180)));
-        poses.put("gateOpen",new Pose(15.8, 57.5,Math.toRadians(160)));
+        poses.put("gateOpen",new Pose(13.8, 57.5,Math.toRadians(160)));
         poses.put("firstSpike",new Pose(22.773, 81,Math.toRadians(180)));
-        poses.put("thirdSpikeLead",new Pose(42.90, 45.23));
-        poses.put("thirdSpikeCtrl",new Pose(35.36, 35.64));
-        poses.put("thirdSpike",new Pose(18.66, 35.69,Math.toRadians(180)));
+        poses.put("thirdSpikeLead",new Pose(42.90, 48.23));
+        poses.put("thirdSpikeCtrl",new Pose(35.36, 38.64));
+        poses.put("thirdSpike",new Pose(18.66, 38.69,Math.toRadians(180)));
         poses.put("park",new Pose(45,79,Math.toRadians(180)));
     }
     public static Pose getPose(String input){if (alliance==Inferno.Alliance.BLUE) return poses.get(input); else return mirrorPose(Objects.requireNonNull(poses.get(input)));}
@@ -286,7 +286,7 @@ public class ClosePrimeSigmaConstants {
     public static Command park = new SequentialCommand(setState(null),
             new PedroCommand(b->
                     b.addPath(new BezierLine(follower::getPose,getPose("park")))
-                            .setLinearHeadingInterpolation(getHeading("shoot"),getHeading("park")),
+                            .setLinearHeadingInterpolation(follower.getHeading(),getHeading("park")),
     true));
     public static ArrayList<Command> pathList = new ArrayList<>(Arrays.asList(
             preloadShoot,

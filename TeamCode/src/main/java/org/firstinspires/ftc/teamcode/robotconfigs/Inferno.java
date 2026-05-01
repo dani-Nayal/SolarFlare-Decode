@@ -525,7 +525,7 @@ public class Inferno implements RobotConfig{
                 }
             }
             turret[0] = (HoodRegression.regressFormula(dist,targetFlywheelVelocity) - TURRET_PITCH_OFFSET)/TURRET_PITCH_RATIO;
-            targetFlywheelVelocity = targetFlywheelVelocity * 1.03 - 33.019299831761;
+            //targetFlywheelVelocity = targetFlywheelVelocity * 1.03 - 33.019299831761;
             targetFlywheelVelocity+=teleOpTPSOffset;
             if (shotType==ShotType.AIRSORT) {
                 targetFlywheelVelocity = 1352;
