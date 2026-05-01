@@ -38,12 +38,13 @@ public class Artifact {
     public double txCenter;
     public double tyCenter;
     public List<List<Double>> corners;
+    public ARTIFACT_TYPE artifactType;
+    public double zDiff;
     public enum ARTIFACT_TYPE{
         GROUND,
         CLASSIFIER,
         INVALID
     }
-    public ARTIFACT_TYPE artifactType;
     public Artifact(LLResultTypes.DetectorResult detectorResult, Vision.CAMERA_ORIENTATION cameraOrientation, Pose botPose){
         if (detectorResult == null) {
             artifactType = ARTIFACT_TYPE.INVALID;
@@ -117,7 +118,9 @@ public class Artifact {
 
             double predictedZ = INTAKING_RAMP_SLOPE * (y - 70.5) + 8.75;
 
-            if (z - predictedZ < 10){
+            this.zDiff = z - predictedZ;
+
+            if (zDiff < 10){
                 artifactType = ARTIFACT_TYPE.CLASSIFIER;
             }
             else{
