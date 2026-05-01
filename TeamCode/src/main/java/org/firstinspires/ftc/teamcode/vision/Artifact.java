@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.vision;
 
 import static org.apache.commons.math3.util.FastMath.cos;
 import static org.apache.commons.math3.util.FastMath.sin;
+import static org.apache.commons.math3.util.FastMath.tan;
 
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Random;
 
 public class Artifact {
+    final double ARTIFACT_RADIUS_INCHES = 2.45;
     public final double INTAKING_RAMP_SLOPE = 0.45977011494;
     public final double fx = 1218.145;
     public final double fy = 1219.418;
@@ -33,6 +35,8 @@ public class Artifact {
     public String className;
     public double txBottomCenter;
     public double tyBottomCenter;
+    public double txCenter;
+    public double tyCenter;
     public List<List<Double>> corners;
     public enum ARTIFACT_TYPE{
         GROUND,
@@ -45,9 +49,13 @@ public class Artifact {
             artifactType = ARTIFACT_TYPE.INVALID;
             return;
         }
-        className = detectorResult.getClassName();
 
-        corners = detectorResult.getTargetCorners();
+        this.txCenter = detectorResult.getTargetXDegrees();
+        this.tyCenter = detectorResult.getTargetYDegrees();
+
+        this.className = detectorResult.getClassName();
+
+        this.corners = detectorResult.getTargetCorners();
 
         double targetYTopCenter = getTopCenterYPixels(cameraOrientation, corners);
 
@@ -61,20 +69,21 @@ public class Artifact {
         double xOffset = targetX - cxNN;
         double yOffset = cyNN - targetY;
 
-        txBottomCenter = Math.toDegrees(Math.atan(xOffset / fxNN));
-        tyBottomCenter = Math.toDegrees(Math.atan(yOffset / fyNN));
+        this.txBottomCenter = Math.toDegrees(Math.atan(xOffset / fxNN));
+        this.tyBottomCenter = Math.toDegrees(Math.atan(yOffset / fyNN));
 
         if (tyTopCenter < 0){
-            artifactType = ARTIFACT_TYPE.GROUND;
+            this.artifactType = ARTIFACT_TYPE.GROUND;
 
-            double verticalAngleDeg = tyBottomCenter + 90 + cameraPoseOnRobot.getOrientation().getPitch(AngleUnit.DEGREES);
+            double verticalAngleDeg = tyCenter + 90 + cameraPoseOnRobot.getOrientation().getPitch(AngleUnit.DEGREES);
 
-            double depth = cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).z * Math.tan(Math.toRadians(verticalAngleDeg));
+            double relativeX = ((cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).z - ARTIFACT_RADIUS_INCHES) * Math.tan(Math.toRadians(verticalAngleDeg)));
 
-            double horizontal = depth * Math.tan(Math.toRadians(txBottomCenter + cameraPoseOnRobot.getOrientation().getYaw(AngleUnit.DEGREES)));
+            double relativeY = -(relativeX * Math.tan(Math.toRadians(txCenter + cameraPoseOnRobot.getOrientation().getYaw(AngleUnit.DEGREES))));
 
-            depth += cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).x;
-            horizontal += cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).y;
+            // relativeY depends on relativeX being relative to camera, not center of robot
+            relativeX += cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).x;
+            relativeY += cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).y;
 
             double botPoseX = botPose.getX();
             double botPoseY = botPose.getY();
@@ -83,27 +92,30 @@ public class Artifact {
             double cos = Math.cos(theta);
             double sin = Math.sin(theta);
 
-            this.x = botPoseX + depth * cos - (-horizontal) * sin;
-            this.y = botPoseY + depth * sin + (-horizontal) * cos;
+            this.x = botPoseX + relativeX * cos - (relativeY) * sin;
+            this.y = botPoseY + relativeX * sin + (relativeY) * cos;
             this.z = 0;
+
             if (!(x >= 0 && x <= 144 && y >= 0 && y <= 144)){
-                artifactType = ARTIFACT_TYPE.INVALID;
+                this.artifactType = ARTIFACT_TYPE.INVALID;
             }
         }
         else {
-            double horizontalAngle = -txBottomCenter + Math.toDegrees(botPose.getHeading());
+            double horizontalAngle = -txCenter + Math.toDegrees(botPose.getHeading());
             double cameraDist = Math.sqrt(cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).x*cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).x+cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).y*cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).y);
+
             double limelightX = botPose.getX()+cos(botPose.getHeading())*cameraDist;
             double limelightY = botPose.getY()+sin(botPose.getHeading())*cameraDist;
             double limelightZ = cameraPoseOnRobot.getPosition().toUnit(DistanceUnit.INCH).z;
+
             this.x = cos(Math.toRadians(horizontalAngle))>0 ? 144-3.5: 3.5;
 
-            double firstHyp = (this.x-limelightX)/cos(Math.toRadians(horizontalAngle));
-            this.y = firstHyp*sin(Math.toRadians(horizontalAngle))+limelightY;
-            double secondHyp = firstHyp/cos(Math.toRadians(tyBottomCenter));
-            this.z = secondHyp*sin(Math.toRadians(tyBottomCenter))+limelightZ;
+            double hyp = (this.x-limelightX)/cos(Math.toRadians(horizontalAngle));
+            this.y = hyp*sin(Math.toRadians(horizontalAngle))+limelightY;
 
-            double predictedZ = INTAKING_RAMP_SLOPE * (y - 70.5) + 6;
+            this.z = tan(Math.toRadians(-tyCenter)) * hyp + limelightZ;
+
+            double predictedZ = INTAKING_RAMP_SLOPE * (y - 70.5) + 8.75;
 
             if (z - predictedZ < 10){
                 artifactType = ARTIFACT_TYPE.CLASSIFIER;

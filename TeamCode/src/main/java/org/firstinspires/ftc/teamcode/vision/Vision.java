@@ -1,4 +1,6 @@
 package org.firstinspires.ftc.teamcode.vision;
+import static java.lang.Double.NaN;
+
 import com.bylazar.field.FieldManager;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.limelightvision.LLResult;
@@ -271,7 +273,7 @@ public class Vision {
     public Double intakingAngleArtifacts(List<Artifact> artifacts, Pose botPose, int stepDeg) {
         if (artifacts.isEmpty()) return null;
 
-        double bestAngle = -1;
+        double bestAngle = NaN;
 
         double bestScore = Double.NEGATIVE_INFINITY;
 
@@ -325,6 +327,7 @@ public class Vision {
             }
         }
 
+        if (Double.isNaN(bestAngle)) return null;
         double bestAngleDeg = Math.toDegrees(bestAngle);
         if (bestAngleDeg < 0) bestAngleDeg += 360;
 
