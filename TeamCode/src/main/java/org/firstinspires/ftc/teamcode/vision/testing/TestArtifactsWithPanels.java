@@ -105,18 +105,21 @@ public class TestArtifactsWithPanels extends OpMode {
                 double z = artifact.z;
                 String className = artifact.className;
                 Artifact.ARTIFACT_TYPE artifactType = artifact.artifactType;
+                double zDiff = artifact.zDiff;
 
                 panelsTelemetry.addData("x", x);
                 panelsTelemetry.addData("y", y);
                 panelsTelemetry.addData("z", z);
                 panelsTelemetry.addData("className", className);
                 panelsTelemetry.addData("artifactType", artifactType);
+                panelsTelemetry.addData("zDiff", zDiff);
 
                 telemetry.addData("x", x);
                 telemetry.addData("y", y);
                 telemetry.addData("z", z);
                 telemetry.addData("className", className);
                 telemetry.addData("artifactType", artifactType);
+                telemetry.addData("zDiff", zDiff);
 
                 panelsField.setStyle(className, className, 0);
                 panelsField.moveCursor(x, y);

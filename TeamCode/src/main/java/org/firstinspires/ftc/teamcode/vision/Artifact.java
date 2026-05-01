@@ -13,9 +13,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 public class Artifact {
     final double ARTIFACT_RADIUS_INCHES = 2.45;
