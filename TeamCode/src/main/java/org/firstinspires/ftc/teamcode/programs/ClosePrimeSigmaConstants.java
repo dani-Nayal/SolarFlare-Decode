@@ -123,7 +123,7 @@ public class ClosePrimeSigmaConstants {
     }
     public static double mirrorHeading(double input){return Math.PI - input;}
     public static final double[] SHOOT = new double[]{59.85,79.42,Math.toRadians(180)};
-    public static final double[] FINAL_SHOOT = new double[]{60,100,Math.toRadians(180)};
+    public static final double[] FINAL_SHOOT = new double[]{62,102,Math.toRadians(180)};
     public static final double[] MOTIF_SHOOT = new double[]{65.5,72.5,Math.toRadians(163)};
     static {
         poses.put("start",new Pose(20.29, 121.28, Math.toRadians(144)));

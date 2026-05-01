@@ -237,7 +237,7 @@ public class Inferno implements RobotConfig{
                         ))
         );
         //turretYaw.call(servo -> servo.setTargetBounds(() -> 210.0 * TURRET_YAW_RATIO + TURRET_YAW_OFFSET, () -> -110.0 * TURRET_YAW_RATIO + TURRET_YAW_OFFSET));
-        turretPitch.call((BotServo servo) -> servo.setTargetBounds(() -> 159.8, () -> 85.9));
+        //turretPitch.call((BotServo servo) -> servo.setTargetBounds(() -> 166.5, () -> 98.5));
         turretPitch.call((BotServo servo)->servo.setPositionCacheThreshold(0.2));
         frontIntake.setKeyPowers(
                 new String[]{"intake","otherSideIntake","transfer","otherSideTransfer","stopped","expel","frontDrive","otherFrontDrive","sideSelect"},
@@ -525,7 +525,6 @@ public class Inferno implements RobotConfig{
                 }
             }
             turret[0] = (HoodRegression.regressFormula(dist,targetFlywheelVelocity) - TURRET_PITCH_OFFSET)/TURRET_PITCH_RATIO;
-            //targetFlywheelVelocity = targetFlywheelVelocity * 1.03 - 33.019299831761;
             targetFlywheelVelocity+=teleOpTPSOffset;
             if (shotType==ShotType.AIRSORT) {
                 targetFlywheelVelocity = 1352;
@@ -964,18 +963,18 @@ public class Inferno implements RobotConfig{
         public static double regressFormula(double dist, double vel){return A*vel*vel+B*dist*vel+C*dist*dist+D*vel+E*dist+F;}
     }
     public abstract static class HoodRegression {
-        private static final double F = 154.96126301538214;
-        private static final double E = 2.40430564e+00;
-        private static final double D = -2.70694235e-01;
-        private static final double C = 2.05861753e-02;
-        private static final double B = -5.40005714e-03;
-        private static final double A = 3.39518930e-04;
-        private static final double F_MOT = 154.96126301538214;
-        private static final double E_MOT = 2.40430564e+00;
-        private static final double D_MOT = -2.70694235e-01;
-        private static final double C_MOT = 2.05861753e-02;
-        private static final double B_MOT = -5.40005714e-03;
-        private static final double A_MOT = 3.39518930e-04;
+        private static final double F = -506.9651468521384;
+        private static final double E = -5.57153712e+00;
+        private static final double D = 1.46153709e+00;
+        private static final double C = 1.17360489e-02;
+        private static final double B = 2.68079815e-03;
+        private static final double A = -6.91006059e-04;
+        private static final double F_MOT = -506.9651468521384;
+        private static final double E_MOT = -5.57153712e+00;
+        private static final double D_MOT = 1.46153709e+00;
+        private static final double C_MOT = 1.17360489e-02;
+        private static final double B_MOT = 2.680798115e-03;
+        private static final double A_MOT = -6.91006059e-04;
         public static double regressFormula(double dist, double vel){
             if (currentBallPath==BallPath.HIGH) return A_MOT*vel*vel+B_MOT*dist*vel+C_MOT*dist*dist+D_MOT*vel+E_MOT*dist+F_MOT;
             else return A*vel*vel+B*dist*vel+C*dist*dist+D*vel+E*dist+F;
@@ -989,13 +988,11 @@ public class Inferno implements RobotConfig{
         }
     }
     public abstract static class VelRegression {
-        private static final double M = 5.8062759;
-        private static final double B = 731.3394178103468;
-        private static final double M_MOTIF = 5.8062759;
-        private static final double B_MOTIF = 731.3394178103468;
+        private static final double C = 850;
+        private static final double B = 2.17;
+        private static final double A = 0.0209;
         public static double regressFormula(double dist){
-            if (shotType != ShotType.AIRSORT) return (M *dist+ B);
-            else return (M_MOTIF *dist+ B_MOTIF);
+            return C+B*dist+A*dist*dist;
         }
     }
     public static void setTargetPoint(){
@@ -1076,7 +1073,7 @@ public class Inferno implements RobotConfig{
         else if (alliance == Alliance.BLUE) {hpRelocalizePose = new Pose(144-8.25,7.2,Math.toRadians(180)); gateRelocalizePose = new Pose(16.26,78.33,Math.toRadians(180));}
         turretYaw.get("turretYawTop").setOffset(-YAW_FIGHT);
         turretYaw.get("turretYawBottom").setOffset(YAW_FIGHT);
-        turretPitch.get("turretPitchLeft").setOffset(-HOOD_FIGHT-7);
-        turretPitch.get("turretPitchRight").setOffset(HOOD_FIGHT-7);
+        turretPitch.get("turretPitchLeft").setOffset(-HOOD_FIGHT);
+        turretPitch.get("turretPitchRight").setOffset(HOOD_FIGHT);
     }
 }
