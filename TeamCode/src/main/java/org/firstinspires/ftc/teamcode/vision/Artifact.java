@@ -113,7 +113,7 @@ public class Artifact {
             double hyp = (this.x-limelightX)/cos(Math.toRadians(horizontalAngle));
             this.y = hyp*sin(Math.toRadians(horizontalAngle))+limelightY;
 
-            this.z = tan(Math.toRadians(-tyCenter)) * hyp + limelightZ;
+            this.z = tan(Math.toRadians(tyCenter)) * hyp + limelightZ;
 
             double predictedZ = INTAKING_RAMP_SLOPE * (y - 70.5) + 8.75;
 
