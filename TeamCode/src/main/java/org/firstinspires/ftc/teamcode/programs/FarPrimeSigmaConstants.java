@@ -1,25 +1,22 @@
 package org.firstinspires.ftc.teamcode.programs;
 
-import static org.apache.commons.math3.util.FastMath.atan2;
 import static org.firstinspires.ftc.teamcode.base.Commands.executor;
 import static org.firstinspires.ftc.teamcode.base.Components.gamepad1;
+import static org.firstinspires.ftc.teamcode.base.Components.gamepad2;
 import static org.firstinspires.ftc.teamcode.base.Components.initialize;
 import static org.firstinspires.ftc.teamcode.base.Components.telemetry;
 import static org.firstinspires.ftc.teamcode.base.Components.timer;
 import static org.firstinspires.ftc.teamcode.pedroPathing.Pedro.follower;
-import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_PITCH_OFFSET;
-import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_PITCH_RATIO;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_YAW_OFFSET;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_YAW_RATIO;
-import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.YAW_FIGHT;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.alliance;
+import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.autoHoodOffset;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.ballStorage;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.classifierBallCount;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.currentBallPath;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.findMotif;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.flywheel;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.gamePhase;
-import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.hoodDesired;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.loopFSM;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.motif;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.readBallStorage;
@@ -29,7 +26,6 @@ import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.shotType;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.targetFlywheelVelocity;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.targetPoint;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.transfer;
-import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.turretOffsetFromAuto;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.turretPitch;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.turretYaw;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.useVelFeedforward;
@@ -104,7 +100,7 @@ public class FarPrimeSigmaConstants {
         poses.put("firstSpikeCtrl",new Pose(37.4,33.6,Math.toRadians(180)));
         poses.put("firstSpike",new Pose(17.3,33.0,Math.toRadians(180)));
         poses.put("firstShoot",new Pose(49.9, 11.8,Math.toRadians(180)));
-        poses.put("loadingZone",new Pose(11.9, 9.6,Math.toRadians(185)));
+        poses.put("loadingZone",new Pose(10.9, 9.6,Math.toRadians(185)));
         poses.put("shoot",new Pose(54.7, 17.6,Math.toRadians(170)));
         poses.put("park",new Pose(40.7,17.6,Math.toRadians(180)));
     }
@@ -120,8 +116,8 @@ public class FarPrimeSigmaConstants {
             new PedroCommand(b->
                 b.addPath(new BezierLine(getPose("start"),getPose("preloadShoot")))
                         .setHeadingInterpolation(HeadingInterpolator.piecewise(
-                                HeadingInterpolator.PiecewiseNode.linear(0.0,0.65, getHeading("start"), getHeading("preloadShoot")),
-                                new HeadingInterpolator.PiecewiseNode(0.65,1.0,HeadingInterpolator.constant(getHeading("preloadShoot")))
+                                HeadingInterpolator.PiecewiseNode.linear(0.0,0.5, getHeading("start"), getHeading("preloadShoot")),
+                                new HeadingInterpolator.PiecewiseNode(0.5,1.0,HeadingInterpolator.constant(getHeading("preloadShoot")))
                         )),true),
             shoot
     );
@@ -161,9 +157,9 @@ public class FarPrimeSigmaConstants {
         Pose pos = follower.getPose();
         Double angle = vision.intakingAngleArtifacts(vision.getArtifacts(pos).get(0), pos,1);
         FarPrimeSigmaConstants.angle = angle;
-        if (Objects.isNull(angle)) angle = visionHeading;
+        if (Objects.isNull(angle)) angle = follower.getHeading();
         else angle = Math.toRadians(angle);
-        double y = Math.max(7.5,tan(angle)*(x-pos.getX()) + pos.getY());
+        double y = Math.min(48, Math.max(7.5,tan(angle)*(x-pos.getX()) + pos.getY()));
         return new Pose(x+xOffset,y);
     }
     public static class VisionIntake extends CompoundCommand{
@@ -224,7 +220,8 @@ public class FarPrimeSigmaConstants {
         Inferno.useTurretSOTM = false;
         useVelFeedforward = false;
         findMotif.reset();
-        turretOffsetFromAuto = 0;
+        autoHoodOffset = 0;
+        turretPitch.call(servo->servo.setOffset(0));
         Inferno.motifDetected = false;
         Components.telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         flag = 0;
@@ -235,6 +232,7 @@ public class FarPrimeSigmaConstants {
         gamePhase = Inferno.GamePhase.AUTO;
         Pedro.createFollower(getPose("start"));
         executor.setWriteToTelemetry(()->{
+            telemetry.addData("Hood Offset", turretPitch.get("turretPitchLeft").getOffset());
             telemetry.addData("Turret Target", turretYaw.get("turretYawTop").getTargetMinusOffset());
             telemetry.addData("Turret Angle", (turretYaw.get("turretYawTop").getTargetMinusOffset()-TURRET_YAW_OFFSET)/TURRET_YAW_RATIO);
             telemetry.addData("0 Target", zeroTarget);
@@ -253,6 +251,8 @@ public class FarPrimeSigmaConstants {
                 new SequentialCommand(new SleepCommand(1.0),new InstantCommand(Inferno::initTurretYawPosition)),
                 turretYaw.command(servo->servo.instantSetTargetCommand(0*TURRET_YAW_RATIO+TURRET_YAW_OFFSET)),
                 turretYaw.command(servo->servo.triggeredDynamicTargetCommand(()->gamepad1.left_trigger>0.2,()->gamepad1.right_trigger>0.2,0.2)),
+                turretPitch.command(servo->servo.instantSetTargetCommand(166.5)),
+                turretPitch.command(servo->servo.triggeredDynamicOffsetCommand(()->gamepad2.left_trigger>0.2,()->gamepad2.right_trigger>0.2,0.2)),
                 new RunResettingLoop(
                         new PressCommand(
                                 new IfThen(()->gamepad1.left_stick_button, new InstantCommand(()->zeroTarget = turretYaw.get("turretYawTop").getTargetMinusOffset())),
@@ -261,8 +261,9 @@ public class FarPrimeSigmaConstants {
                 )
         );
         turretYaw.call(servo->servo.switchControl("setPos"));
+        turretPitch.call(servo->servo.switchControl("setPos"));
         executor.runLoop(opMode::opModeInInit);
-        //turretOffsetFromAuto = turretYaw.get("turretYawTop").getOffset() + YAW_FIGHT;
+        Inferno.autoHoodOffset = turretPitch.get("turretPitchLeft").getOffset();
         TURRET_YAW_OFFSET = zeroTarget;
         TURRET_YAW_RATIO = (oppTarget-zeroTarget)/180.0;
         Components.activateActuatorControl();
@@ -278,8 +279,8 @@ public class FarPrimeSigmaConstants {
             Components.telemetry.addData("Yaw Angle",yawDesired);
             Components.telemetry.addData("Yaw Error", turretYaw.get("turretYawTop").getTarget() - turretYaw.get("turretYawTop").getCurrentPosition());
             telemetry.addLine("");
-            telemetry.addData("Hood Angle",(turretPitch.get("turretPitchLeft").getTarget()-TURRET_PITCH_OFFSET)/TURRET_PITCH_RATIO);
-            telemetry.addData("Hood Desired",hoodDesired);
+            Components.telemetry.addData("Hood Target", turretPitch.get("turretPitchLeft").getTarget());
+            Components.telemetry.addData("Hood Target Minus Offset", turretPitch.get("turretPitchLeft").getTargetMinusOffset());
             telemetry.addLine("");
             telemetry.addData("Ball Storage", Arrays.asList(ballStorage));
             telemetry.addLine("");

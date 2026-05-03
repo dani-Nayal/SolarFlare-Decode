@@ -48,7 +48,7 @@ public class AlsoShooterTest extends LinearOpMode {
         rightVelocityPID.setPIDCoefficients(kP,kI,kD);
         */
         Components.telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
-        Pedro.createFollower(new Pose(72,72,0));
+        Pedro.createFollower(new Pose(72,48,0));
         waitForStart();
         turretPitch.call(servo->servo.switchControl("setPos"));
         flywheel.call(motor->motor.switchControl("VelocityPIDF"));

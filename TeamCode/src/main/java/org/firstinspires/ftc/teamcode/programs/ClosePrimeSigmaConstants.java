@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.programs;
 
 import static org.firstinspires.ftc.teamcode.base.Commands.executor;
 import static org.firstinspires.ftc.teamcode.base.Components.gamepad1;
+import static org.firstinspires.ftc.teamcode.base.Components.gamepad2;
 import static org.firstinspires.ftc.teamcode.base.Components.initialize;
 import static org.firstinspires.ftc.teamcode.base.Components.telemetry;
 import static org.firstinspires.ftc.teamcode.pedroPathing.Pedro.follower;
@@ -14,6 +15,7 @@ import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_YAW_OFF
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_YAW_RATIO;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.YAW_FIGHT;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.alliance;
+import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.autoHoodOffset;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.ballStorage;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.classifierBallCount;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.currentBallPath;
@@ -35,6 +37,7 @@ import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.transfer;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.turretOffsetFromAuto;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.turretPitch;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.turretYaw;
+import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.useTurretSOTM;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.useVelFeedforward;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.vision;
 
@@ -85,6 +88,7 @@ public class ClosePrimeSigmaConstants {
     public static Inferno.ShotType sorting = NORMAL;
     public static double zeroTarget = 0*TURRET_YAW_RATIO+TURRET_YAW_OFFSET;
     public static double oppTarget = 180*TURRET_YAW_RATIO+TURRET_YAW_OFFSET;
+    public static boolean sotm = false;
     public static Command shoot = new SequentialCommand(
             new SleepCommand(PRE_SHOT_TIME),
             setState(Inferno.RobotState.SHOOTING),
@@ -133,7 +137,7 @@ public class ClosePrimeSigmaConstants {
         poses.put("secondSpikeCtrl",new Pose(41.07, 58.06));
         poses.put("secondSpike",new Pose(18.829, 58.805));
         poses.put("secondSpikeGateOpen",new Pose(16.80, 60.54,Math.toRadians(180)));
-        poses.put("gateOpen",new Pose(13.8, 57.5,Math.toRadians(160)));
+        poses.put("gateOpen",new Pose(12.8, 58,Math.toRadians(160)));
         poses.put("firstSpike",new Pose(22.773, 81,Math.toRadians(180)));
         poses.put("thirdSpikeLead",new Pose(42.90, 48.23));
         poses.put("thirdSpikeCtrl",new Pose(35.36, 38.64));
@@ -176,7 +180,7 @@ public class ClosePrimeSigmaConstants {
                 .addParametricCallback(speedUpT,()->follower.setMaxPower(1.0))
                 .addParametricCallback(stopIntakeT,()->setState(Inferno.RobotState.STOPPED).run())
                 .addParametricCallback(secondShootSlowT,()->follower.setMaxPower(shootSlowAmount))
-                .addParametricCallback(0.93,()->follower.setMaxPower(1.0)), true), shoot);
+                .addParametricCallback(0.93,()->follower.setMaxPower(1.0)), true).setTimeout(5.5), shoot);
     public static Command secondSpikeGateOpen = new SequentialCommand(new PedroCommand(
             (PathBuilder b)->b.addPath(
                             new BezierCurve(
@@ -195,7 +199,7 @@ public class ClosePrimeSigmaConstants {
                     .addParametricCallback(speedUpT,()->follower.setMaxPower(1.0))
                     .addParametricCallback(stopIntakeT,()->setState(Inferno.RobotState.STOPPED).run())
                     .addParametricCallback(secondShootSlowT,()->follower.setMaxPower(shootSlowAmount))
-                    .addParametricCallback(0.93,()->follower.setMaxPower(1.0)), true), shoot);
+                    .addParametricCallback(0.93,()->follower.setMaxPower(1.0)), true).setTimeout(5.7), shoot);
     public static Command gate = new SequentialCommand(new PedroCommand(
                 (PathBuilder b)->b.addPath(
                         new BezierLine(
@@ -254,7 +258,8 @@ public class ClosePrimeSigmaConstants {
                     .addParametricCallback(stopIntakeT,()->setState(Inferno.RobotState.STOPPED).run())
                     .addParametricCallback(fourthShootSlowT,()->follower.setMaxPower(shootSlowAmount))
                     .addParametricCallback(0.93,()->classifierBallCount = vision.getArtifacts(follower.getPose()).get(1).size())
-                    .addParametricCallback(0.93,()->follower.setMaxPower(1.0));},true), shoot
+                    .addParametricCallback(0.93,()->follower.setMaxPower(1.0));},true),
+            shoot
     );
     public static Command thirdSpike =  new SequentialCommand(new PedroCommand(
             (PathBuilder b)->{HeadingInterpolator interp = sorting==NORMAL ? HeadingInterpolator.tangent.reverse(): HeadingInterpolator.piecewise(
@@ -282,7 +287,9 @@ public class ClosePrimeSigmaConstants {
                     ).setHeadingInterpolation(interp)
                     .addParametricCallback(speedUpT,()->follower.setMaxPower(1.0))
                     .addParametricCallback(0.93,()->classifierBallCount = vision.getArtifacts(follower.getPose()).get(1).size())
-                    .addParametricCallback(stopIntakeT,()->setState(Inferno.RobotState.STOPPED).run());},true), shoot);
+                    .addParametricCallback(stopIntakeT,()->setState(Inferno.RobotState.STOPPED).run());},true).setTimeout(7),
+            shoot
+    );
     public static Command park = new SequentialCommand(setState(null),
             new PedroCommand(b->
                     b.addPath(new BezierLine(follower::getPose,getPose("park")))
@@ -334,7 +341,8 @@ public class ClosePrimeSigmaConstants {
         Inferno.useTurretSOTM = false;
         useVelFeedforward = false;
         Inferno.motifDetected = false;
-        turretOffsetFromAuto = 0;
+        autoHoodOffset = 0;
+        turretPitch.call(servo->servo.setOffset(0));
         Components.telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         preloadShoot.reset();
         Inferno.alliance = alliance;
@@ -359,11 +367,13 @@ public class ClosePrimeSigmaConstants {
                 "firstSpike"
         ));
         executor.setWriteToTelemetry(()->{
-                telemetry.addData("Sorting", sorting);
+                telemetry.addData("Hood Offset", turretPitch.get("turretPitchLeft").getOffset());
                 telemetry.addData("Turret Target", turretYaw.get("turretYawTop").getTargetMinusOffset());
                 telemetry.addData("Turret Angle", (turretYaw.get("turretYawTop").getTargetMinusOffset()-TURRET_YAW_OFFSET)/TURRET_YAW_RATIO);
                 telemetry.addData("0 Target", zeroTarget);
                 telemetry.addData("180 Target", oppTarget);
+                telemetry.addLine("");
+                telemetry.addData("Sorting", sorting);
                 telemetry.addLine("");
                 telemetry.addLine("A: First Spike");
                 telemetry.addLine("B: Second Spike");
@@ -395,7 +405,9 @@ public class ClosePrimeSigmaConstants {
                 new SequentialCommand(new SleepCommand(1.0),new InstantCommand(Inferno::initTurretYawPosition)),
                 Commands.triggeredCycleCommand(()->gamepad1.start, new InstantCommand(()->sorting=SEMISORT), new InstantCommand(()->sorting=AIRSORT), new InstantCommand(()->sorting=NORMAL)),
                 turretYaw.command(servo->servo.instantSetTargetCommand(0*TURRET_YAW_RATIO+TURRET_YAW_OFFSET)),
+                turretPitch.command(servo->servo.instantSetTargetCommand(166.5)),
                 turretYaw.command(servo->servo.triggeredDynamicTargetCommand(()->gamepad1.left_trigger>0.2,()->gamepad1.right_trigger>0.2,0.2)),
+                turretPitch.command(servo->servo.triggeredDynamicOffsetCommand(()->gamepad2.left_trigger>0.2,()->gamepad2.right_trigger>0.2,0.2)),
                 new RunResettingLoop(new PressCommand(
                         new IfThen(()->gamepad1.dpad_up,new InstantCommand(()->{
                                 if (!isInserting){
@@ -430,8 +442,9 @@ public class ClosePrimeSigmaConstants {
                 ))
         );
         turretYaw.call(servo->servo.switchControl("setPos"));
+        turretPitch.call(servo->servo.switchControl("setPos"));
         executor.runLoop(opMode::opModeInInit);
-        //turretOffsetFromAuto = turretYaw.get("turretYawTop").getOffset() + YAW_FIGHT;
+        Inferno.autoHoodOffset = turretPitch.get("turretPitchLeft").getOffset();
         TURRET_YAW_OFFSET = zeroTarget;
         TURRET_YAW_RATIO = (oppTarget-zeroTarget)/180.0;
         Components.activateActuatorControl();
@@ -445,8 +458,8 @@ public class ClosePrimeSigmaConstants {
             telemetry.addData("Flywheel Velocity", flywheel.get("flywheelLeft").getVelocity());
             telemetry.addData("Flywheel Error", targetFlywheelVelocity - flywheel.get("flywheelLeft").getVelocity());
             telemetry.addLine("");
-            telemetry.addData("Hood Angle",(turretPitch.get("turretPitchLeft").getTarget()-TURRET_PITCH_OFFSET)/TURRET_PITCH_RATIO);
-            telemetry.addData("Hood Desired",hoodDesired);
+            Components.telemetry.addData("Hood Target", turretPitch.get("turretPitchLeft").getTarget());
+            Components.telemetry.addData("Hood Target Minus Offset", turretPitch.get("turretPitchLeft").getTargetMinusOffset());
             telemetry.addLine("");
             telemetry.addData("Ball Storage", Arrays.asList(ballStorage));
             telemetry.addLine("");
@@ -471,7 +484,7 @@ public class ClosePrimeSigmaConstants {
             );}
             else if (sorting==SEMISORT){pathList.add(pathList.size()-3,setShotType(SEMISORT));}
         }
-        if (!pathList.isEmpty() && !(sorting==AIRSORT)) pathList.add(pathList.size()-1,new InstantCommand(()->poses.put("shoot",new Pose(FINAL_SHOOT[0], FINAL_SHOOT[1], FINAL_SHOOT[2]))));
+        if (!pathList.isEmpty() && !(sorting==AIRSORT)) pathList.add(pathList.size()-1,new InstantCommand(()->{poses.put("shoot",new Pose(FINAL_SHOOT[0], FINAL_SHOOT[1], FINAL_SHOOT[2]));}));
         SequentialCommand mainPath = new SequentialCommand(pathList.toArray(new Command[0]));
         executor.setCommands(
                 new ParallelCommand(findMotif, new SequentialCommand(new SleepCommand(8),new InstantCommand(findMotif::stop))),

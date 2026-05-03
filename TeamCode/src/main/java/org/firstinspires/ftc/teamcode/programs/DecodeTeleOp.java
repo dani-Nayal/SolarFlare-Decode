@@ -4,10 +4,9 @@ import static org.firstinspires.ftc.teamcode.base.Commands.executor;
 import static org.firstinspires.ftc.teamcode.base.Components.initialize;
 import static org.firstinspires.ftc.teamcode.base.Components.timer;
 import static org.firstinspires.ftc.teamcode.pedroPathing.Pedro.follower;
-import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_PITCH_OFFSET;
-import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.TURRET_PITCH_RATIO;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.YAW_FIGHT;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.alliance;
+import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.autoHoodOffset;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.ballStorage;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.classifierBallCount;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.findMotif;
@@ -15,11 +14,9 @@ import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.gateRelocalize
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.motif;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.flywheel;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.gamePhase;
-import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.hoodDesired;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.leftFront;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.leftRear;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.loopFSM;
-import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.panic;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.physicsTime;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.hpRelocalizePose;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.rightFront;
@@ -43,7 +40,6 @@ import org.firstinspires.ftc.teamcode.robotconfigs.Fisiks;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
-import org.firstinspires.ftc.teamcode.base.Commands;
 import org.firstinspires.ftc.teamcode.base.Commands.*;
 
 import com.pedropathing.control.PIDFCoefficients;
@@ -65,19 +61,10 @@ import java.util.Objects;
 @TeleOp
 @Config
 public class DecodeTeleOp extends LinearOpMode {
-    public int counter = 0;
     public static double LOW_FRICTION = Fisiks.LOW_FRICTION;
     public static double HIGH_FRICTION = Fisiks.HIGH_FRICTION;
-    private boolean holdingPosition = false;
     private double lastTime = 0;
-    private double previousBallCount = 0;
-    private boolean isRed = false;
     private final Color[] dinglyAlliance = new Color[3];
-    private void breakFollowing(){
-        holdingPosition = false;
-        follower.breakFollowing();
-        setMotorsToBrake();
-    }
     private void setMotorsToBrake(){
         leftFront.getDevice().setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         leftRear.getDevice().setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -110,23 +97,14 @@ public class DecodeTeleOp extends LinearOpMode {
         );
         turretYaw.get("turretYawTop").setOffset(turretOffsetFromAuto-YAW_FIGHT);
         turretYaw.get("turretYawBottom").setOffset(turretOffsetFromAuto+YAW_FIGHT);
+        turretPitch.call(servo->servo.setOffset(autoHoodOffset));
         executor.runLoop(this::opModeInInit);
         if (alliance == Alliance.RED) {hpRelocalizePose = new Pose(8.25,7.2,Math.toRadians(0)); gateRelocalizePose = new Pose(144-16.26,78.33,Math.toRadians(0));}
         else if (alliance == Alliance.BLUE) {hpRelocalizePose = new Pose(144-8.25,7.2,Math.toRadians(180)); gateRelocalizePose = new Pose(16.26,78.33,Math.toRadians(180));}
         follower.setTranslationalPIDFCoefficients(new PIDFCoefficients(0.2*1.4/0.45, 0, 0.001*1.4/0.45, 0));
         follower.setHeadingPIDFCoefficients(new PIDFCoefficients(1.1*0.4/0.35,0.001*0.4/0.35,0.00001*0.4/0.35,0));
         Components.activateActuatorControl();
-        breakFollowing();
-        Command aprilTag = new AprilTagRelocalize();
-        PressCommand pressCommand = new PressCommand(
-                new IfThen(()->gamepad2.back,toggleShotType()),
-                new IfThen(()->gamepad2.y,new InstantCommand(()->classifierBallCount=vision.getArtifacts(follower.getPose()).get(1).size())),
-                new IfThen(()->gamepad2.x,new InstantCommand(()->classifierBallCount=0)),
-                new IfThen(()->gamepad2.a,new InstantCommand(()->{if (classifierBallCount<9) {classifierBallCount+=1;}})),
-                new IfThen(()->gamepad2.b,new InstantCommand(()->{if (classifierBallCount>0){classifierBallCount-=1;}})),
-                new IfThen(()->gamepad2.right_bumper, new InstantCommand(()->{follower.setPose(gateRelocalizePose); turretYaw.get("turretYawTop").setOffset(-YAW_FIGHT); turretYaw.get("turretYawBottom").setOffset(YAW_FIGHT);})),
-                new IfThen(()->gamepad2.left_bumper, new InstantCommand(()->{follower.setPose(hpRelocalizePose); turretYaw.get("turretYawTop").setOffset(-YAW_FIGHT); turretYaw.get("turretYawBottom").setOffset(YAW_FIGHT);}))
-        );
+        setMotorsToBrake();
         executor.setCommands(
                 new SequentialCommand(findMotif),
                 new RunResettingLoop(
@@ -138,47 +116,28 @@ public class DecodeTeleOp extends LinearOpMode {
                                 new IfThen(()->gamepad1.b, setState(RobotState.INTAKE_AND_SHOOT)),
                                 new IfThen(()->gamepad1.a, setState(RobotState.EXPEL))
                         ),
-                        pressCommand,
-                        Commands.triggeredToggleCommand(()->gamepad2.left_stick_button,new ContinuousCommand(()->{}),panic),
-                        turretYaw.command(servo->servo.triggeredDynamicOffsetCommand(()->gamepad2.left_trigger>0.2,()->gamepad2.right_trigger>0.2,0.5)),
-                        Commands.triggeredDynamicCommand(()->gamepad2.dpad_up,()->gamepad2.dpad_down,new InstantCommand(()->teleOpTPSOffset+=3),new InstantCommand(()->teleOpTPSOffset-=3)),
                         new PressCommand(
-                                new IfThen(()->!panic.isBusy() && robotState==RobotState.SHOOTING && !(Math.sqrt(gamepad1.left_stick_x*gamepad1.left_stick_x + gamepad1.left_stick_y*gamepad1.left_stick_y)>0.1 || Math.abs(gamepad1.right_stick_x)>0.1),
-                                        new SequentialCommand(
-                                                new InstantCommand(()->{this.breakFollowing(); holdingPosition = true;}),
-                                                new SleepCommand(0.2),
-                                                new InstantCommand(()->{follower.holdPoint(follower.getPose()); setMotorsToBrake();})
-                                        )
-                                ),
-                                new IfThen(()->!(!panic.isBusy() && robotState==RobotState.SHOOTING && !(Math.sqrt(gamepad1.left_stick_x*gamepad1.left_stick_x + gamepad1.left_stick_y*gamepad1.left_stick_y)>0.1 || Math.abs(gamepad1.right_stick_x)>0.1)), new InstantCommand(()->{if (!follower.isBusy()){this.breakFollowing();}}))
+                                new IfThen(()->gamepad2.back,toggleShotType()),
+                                new IfThen(()->gamepad2.y,new InstantCommand(()->classifierBallCount=vision.getArtifacts(follower.getPose()).get(1).size())),
+                                new IfThen(()->gamepad2.x,new InstantCommand(()->classifierBallCount=0)),
+                                new IfThen(()->gamepad2.a,new InstantCommand(()->{if (classifierBallCount<9) {classifierBallCount+=1;}})),
+                                new IfThen(()->gamepad2.b,new InstantCommand(()->{if (classifierBallCount>0){classifierBallCount-=1;}})),
+                                new IfThen(()->gamepad2.right_bumper, new InstantCommand(()->{follower.setPose(gateRelocalizePose); turretYaw.get("turretYawTop").setOffset(-YAW_FIGHT); turretYaw.get("turretYawBottom").setOffset(YAW_FIGHT);})),
+                                new IfThen(()->gamepad2.left_bumper, new InstantCommand(()->{follower.setPose(hpRelocalizePose); turretYaw.get("turretYawTop").setOffset(-YAW_FIGHT); turretYaw.get("turretYawBottom").setOffset(YAW_FIGHT);})),
+                                new IfThen(()->gamepad2.left_trigger>0.2, turretYaw.command(servo->servo.setOffsetCommand(()->servo.getOffset()+1))),
+                                new IfThen(()->gamepad2.right_trigger>0.2, turretYaw.command(servo->servo.setOffsetCommand(()->servo.getOffset()-1))),
+                                new IfThen(()->gamepad2.dpad_up, new InstantCommand(()->teleOpTPSOffset+=5)),
+                                new IfThen(()->gamepad2.dpad_down, new InstantCommand(()->teleOpTPSOffset-=5))
                         ),
-                        new InstantCommand(this::setMotorsToBrake),
-                        new ConditionalCommand(
-                                new IfThen(
-                                        ()->!(follower.isBusy() || holdingPosition),
-                                        new ParallelCommand(
-                                                new RobotCentricMecanumCommand(
-                                                        new BotMotor[]{leftFront,leftRear,rightFront,rightRear},
-                                                        ()-> (double) gamepad1.left_stick_x, ()-> (double) gamepad1.left_stick_y, ()-> (double) gamepad1.right_stick_x
-                                                ),
-                                                Pedro.updatePoseCommand()
-                                        )
+                        new ParallelCommand(
+                                new RobotCentricMecanumCommand(
+                                        new BotMotor[]{leftFront,leftRear,rightFront,rightRear},
+                                        ()-> (double) gamepad1.left_stick_x, ()-> (double) gamepad1.left_stick_y, ()-> (double) gamepad1.right_stick_x
                                 ),
-                                new IfThen(
-                                        ()->(follower.isBusy() || holdingPosition),
-                                        Pedro.updateCommand()
-                                )
+                                Pedro.updatePoseCommand()
                         )
                 ),
-                loopFSM,
-                new ContinuousCommand(()->{
-                    if (yawDesired>=150 || yawDesired<=-80 && !isRed) {isRed=true; gamepad1.setLedColor(255,0,0,1000000);}
-                    else if (yawDesired<=150 && yawDesired>=-80 && isRed) {isRed=false; gamepad1.setLedColor(0,0,0,1000000);}
-                    long count = Arrays.stream(ballStorage).filter(Objects::nonNull).count();
-                    if (count==3 && count!=previousBallCount && !gamepad1.isRumbling()) gamepad1.rumble(1000);
-                    else if (count!=3 && gamepad1.isRumbling()) gamepad1.stopRumble();
-                    previousBallCount = count;
-                })
+                loopFSM
 
         );
         executor.setWriteToTelemetry(()->{
@@ -199,9 +158,10 @@ public class DecodeTeleOp extends LinearOpMode {
             Components.telemetry.addData("Flywheel Velocity",flywheel.get("flywheelLeft").getVelocity());
             Components.telemetry.addData("Flywheel Error",  targetFlywheelVelocity - flywheel.get("flywheelLeft").getVelocity());
             Components.telemetry.addLine("");
-            Components.telemetry.addData("Hood Angle",(turretPitch.get("turretPitchLeft").getTarget()-TURRET_PITCH_OFFSET)/TURRET_PITCH_RATIO);
-            Components.telemetry.addData("Hood Desired", hoodDesired);
+            //Components.telemetry.addData("Hood Angle",(turretPitch.get("turretPitchLeft").getTarget()-TURRET_PITCH_OFFSET)/TURRET_PITCH_RATIO);
+            //Components.telemetry.addData("Hood Desired", hoodDesired);
             Components.telemetry.addData("Hood Target", turretPitch.get("turretPitchLeft").getTarget());
+            Components.telemetry.addData("Hood Target Minus Offset", turretPitch.get("turretPitchLeft").getTargetMinusOffset());
             Components.telemetry.addLine("");
             Components.telemetry.addData("Yaw Angle",yawDesired);
             Components.telemetry.addLine("");

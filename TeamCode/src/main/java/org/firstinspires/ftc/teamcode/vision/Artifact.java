@@ -118,7 +118,7 @@ public class Artifact {
 
             this.zDiff = z - predictedZ;
 
-            if (zDiff < 10){
+            if (zDiff < 4){
                 artifactType = ARTIFACT_TYPE.CLASSIFIER;
             }
             else{

@@ -13,6 +13,7 @@ import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.leftFront;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.leftRear;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.rightFront;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.rightRear;
+import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.sideRollers;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.transferGate;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.turretPitch;
 import static org.firstinspires.ftc.teamcode.robotconfigs.Inferno.turretYaw;
@@ -43,7 +44,8 @@ public class Diagnostic extends LinearOpMode {
                     new Commands.ParallelCommand(
                             frontIntake.setPowerCommand(0.2),
                             backIntake.setPowerCommand(0.2),
-                            flywheel.command(motor->motor.setPowerCommand(0.15))
+                            flywheel.command(motor->motor.setPowerCommand(0.15)),
+                            sideRollers.command(servo->servo.setPowerCommand(0.2))
                     ),
                     new Commands.LoopUntilTrue(()-> stage == 1,
                             new Commands.SequentialCommand(transferGate.moveToTargetCommand("open"),new Commands.SleepCommand(0.5),transferGate.moveToTargetCommand("closed"),new Commands.SleepCommand(0.5)),
@@ -53,6 +55,7 @@ public class Diagnostic extends LinearOpMode {
                             turretYaw.command(servo->new Commands.SequentialCommand(servo.moveToTargetCommand(180),new Commands.SleepCommand(0.5),servo.moveToTargetCommand(250),new Commands.SleepCommand(0.5)))
                     ),
                     new Commands.ParallelCommand(
+                            sideRollers.command(servo->servo.setPowerCommand(0)),
                             frontIntake.setPowerCommand(0),
                             backIntake.setPowerCommand(0),
                             flywheel.command(motor->motor.setPowerCommand(0)),
@@ -63,6 +66,8 @@ public class Diagnostic extends LinearOpMode {
                     ),
                     new Commands.SleepUntilTrue(()->stage==2),
                     new Commands.ParallelCommand(
+                        frontIntakeGate.moveToTargetCommand("open"),
+                        backIntakeGate.moveToTargetCommand("open"),
                         leftFront.setPowerCommand(0),
                         leftRear.setPowerCommand(0),
                         rightFront.setPowerCommand(0),

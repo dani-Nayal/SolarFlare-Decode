@@ -40,6 +40,7 @@ public class ShooterTest extends LinearOpMode {
         );
         executor.setWriteToTelemetry(()->{
             telemetry.addData("hood",turretPitch.get("turretPitchLeft").getTarget());
+            telemetry.addData("hood minus offset",turretPitch.get("turretPitchLeft").getTargetMinusOffset());
             telemetry.addData("yaw target",turretYaw.get("turretYawTop").getTargetMinusOffset());
             telemetry.addData("yaw offset",turretYaw.get("turretYawTop").getOffset()+YAW_FIGHT);
             telemetry.addData("yaw angle",targetYaw);
